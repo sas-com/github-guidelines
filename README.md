@@ -26,6 +26,7 @@
 
 | ドキュメント | 対象者 | 説明 |
 |------------|--------|------|
+| **[GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)** | 全員 | アカウント作成から2FA設定までの詳細手順 |
 | **[新規参画者向けオンボーディング](./ONBOARDING.md)** | 新規参画者 | 環境構築から開発開始までの手順（WSL2対応） |
 | **[クライアント様向け利用ガイド](./CLIENT_GUIDE.md)** | クライアント | 進捗確認とフィードバックの方法 |
 
@@ -55,10 +56,11 @@
 
 ### 新規参画者の方
 
-1. **[オンボーディングガイド](./ONBOARDING.md)** を確認
-2. 環境構築（WSL2、Git、GitHub）
-3. SSH鍵の設定
-4. 練習リポジトリでトレーニング
+1. **[GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)** でアカウント作成
+2. **[オンボーディングガイド](./ONBOARDING.md)** を確認
+3. 環境構築（WSL2、Git、GitHub）
+4. SSH鍵の設定
+5. 練習リポジトリでトレーニング
 
 ### 開発者の方
 
@@ -157,6 +159,7 @@ github-guidelines/
 ├── GUIDELINES_DETAIL.md         # 詳細版運用ガイドライン
 ├── QUICK_REFERENCE.md           # クイックリファレンス
 ├── EMERGENCY_RESPONSE.md        # 緊急時対応マニュアル
+├── GITHUB_ACCOUNT_SETUP.md     # GitHubアカウント作成・設定ガイド
 ├── ONBOARDING.md               # 新規参画者向けオンボーディング
 ├── CLIENT_GUIDE.md             # クライアント様向けガイド
 └── PROJECT_GUIDELINE_TEMPLATE.md # プロジェクト別ガイドライン作成マニュアル

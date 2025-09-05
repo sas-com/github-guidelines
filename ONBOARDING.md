@@ -105,16 +105,11 @@ code .
 ### ✅ チェックリスト
 
 #### 1. GitHubアカウント作成
-- [ ] 個人GitHubアカウントを作成（既にある場合はスキップ）
+- [ ] GitHubアカウントを作成（既にある場合はスキップ）
 - [ ] プロフィール設定（名前、アバター画像）
 - [ ] **重要**: 2要素認証（2FA）を有効化
 
-```markdown
-💡 2FA設定手順：
-1. Settings → Password and authentication
-2. Enable two-factor authentication
-3. スマートフォンの認証アプリ（Google Authenticator等）を使用
-```
+📖 **詳細手順**: [GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)を参照
 
 #### 2. 組織への参加
 - [ ] 招待メールを確認
