@@ -6,8 +6,8 @@
 
 ## 📌 概要
 
-このリポジトリは、エス・エー・エス株式会社におけるGitHub利用に関する各種ガイドラインをまとめたものです。
-プロジェクトに参画される全ての方は、該当するガイドラインをご確認ください。
+このリポジトリは、エス・エー・エス株式会社におけるGitHub利用に関する**全社共通**ガイドラインをまとめたものです。
+各プロジェクト固有のガイドラインは、[プロジェクト別ガイドライン作成マニュアル](./PROJECT_GUIDELINE_TEMPLATE.md)を参考に、各プロジェクトリポジトリ内に作成してください。
 
 ---
 
@@ -20,6 +20,7 @@
 | **[詳細版 GitHub運用ガイドライン](./GUIDELINES_DETAIL.md)** | 全員 | GitHub利用に関する詳細な規約と手順 |
 | **[クイックリファレンス](./QUICK_REFERENCE.md)** | 開発者 | よく使うコマンドと操作の簡易マニュアル |
 | **[緊急時対応マニュアル](./EMERGENCY_RESPONSE.md)** | 全員 | インシデント発生時の対応手順 |
+| **[プロジェクト別ガイドライン作成マニュアル](./PROJECT_GUIDELINE_TEMPLATE.md)** | PM/TL | 各プロジェクト固有ガイドラインの作成手順 |
 
 ### 👥 対象者別ガイド
 
@@ -149,6 +150,7 @@ hotfix/[説明]     # 緊急修正
 
 ## 📊 ドキュメント構成
 
+### 全社共通ガイドライン（このリポジトリ）
 ```
 github-guidelines/
 ├── README.md                    # このファイル（サマリー）
@@ -156,7 +158,22 @@ github-guidelines/
 ├── QUICK_REFERENCE.md           # クイックリファレンス
 ├── EMERGENCY_RESPONSE.md        # 緊急時対応マニュアル
 ├── ONBOARDING.md               # 新規参画者向けオンボーディング
-└── CLIENT_GUIDE.md             # クライアント様向けガイド
+├── CLIENT_GUIDE.md             # クライアント様向けガイド
+└── PROJECT_GUIDELINE_TEMPLATE.md # プロジェクト別ガイドライン作成マニュアル
+```
+
+### 各プロジェクトリポジトリで作成すべきドキュメント
+```
+[project-repository]/
+├── README.md                    # プロジェクト概要
+├── CONTRIBUTING.md              # 開発参加ガイド
+├── DEVELOPMENT.md               # 開発環境構築手順
+├── ARCHITECTURE.md              # システム設計書（推奨）
+├── API.md                       # API仕様書（推奨）
+├── DEPLOYMENT.md                # デプロイ手順（推奨）
+└── .github/
+    ├── ISSUE_TEMPLATE/          # Issueテンプレート
+    └── pull_request_template.md # PRテンプレート
 ```
 
 ---
