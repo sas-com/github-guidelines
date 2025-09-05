@@ -851,10 +851,10 @@ graph TD
 
 | 種別 | 連絡先 | 対応時間 |
 |------|--------|----------|
-| **技術的問題** | #tech-support (Slack) | 営業時間内 |
-| **権限・アクセス** | github-admin@sas-com.co.jp | 営業時間内 |
-| **セキュリティ** | security@sas-com.co.jp | 24時間 |
-| **緊急時** | 緊急連絡網参照 | 24時間 |
+| **技術的問題** | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
+| **権限・アクセス** | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
+| **セキュリティ** | SAS Github管理チーム (github@sas-com.com) | 24時間 |
+| **緊急時** | 担当プロジェクトマネージャー・担当リーダー | 24時間 |
 
 ### 有用なリソース
 
