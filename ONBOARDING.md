@@ -341,7 +341,8 @@ hotfix/[説明]     # 緊急修正
 
 必ず読むドキュメント：
 
-- [ ] [GitHub運用ガイドライン](./README.md)
+- [ ] [GitHub運用ガイドライン サマリー](./README.md)
+- [ ] [GitHub運用ガイドライン 詳細版](./GUIDELINES_DETAIL.md)
 - [ ] [クイックリファレンス](./QUICK_REFERENCE.md)
 - [ ] プロジェクト固有のREADME
 
@@ -526,8 +527,10 @@ git commit -m "resolve: コンフリクトを解決"
 ## 📚 学習リソース
 
 ### 社内リソース
-- 📖 [GitHub運用ガイドライン](./README.md) - 必読
+- 📖 [GitHub運用ガイドライン サマリー](./README.md) - 概要把握
+- 📖 [GitHub運用ガイドライン 詳細版](./GUIDELINES_DETAIL.md) - 必読
 - 🚀 [クイックリファレンス](./QUICK_REFERENCE.md) - 手元に置いておく
+- 🆘 [緊急時対応マニュアル](./EMERGENCY_RESPONSE.md) - 緊急時に確認
 - 🎥 社内勉強会アーカイブ - 過去の勉強会動画
 
 ### 外部リソース

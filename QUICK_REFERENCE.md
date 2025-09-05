@@ -397,7 +397,9 @@ git push --force-with-lease origin branch-name
 
 ## 📚 もっと詳しく知りたいとき
 
-- [詳細な運用ガイドライン](./README.md)
+- [GitHub運用ガイドライン サマリー](./README.md)
+- [GitHub運用ガイドライン 詳細版](./GUIDELINES_DETAIL.md)
+- [緊急時対応マニュアル](./EMERGENCY_RESPONSE.md)
 - [GitHub公式ドキュメント](https://docs.github.com)
 - [Git チートシート](https://training.github.com/downloads/ja/github-git-cheat-sheet.pdf)
 - [Pro Git Book（日本語）](https://git-scm.com/book/ja/v2)
