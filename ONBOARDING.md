@@ -604,12 +604,31 @@ wsl
 cd ~/projects  # /mnt/c/ではなくホームディレクトリ以下を使用
 ```
 
-#### 改行コードの問題
+#### 改行コードの問題（重要）
+> ⚠️ **注意**: この問題はプロジェクト全体に影響する可能性があります。チーム全員のコードに改行コードの差異が発生し、不要なコンフリクトやレビューの混乱を引き起こします。
+
+**問題の症状:**
+- ファイル全体が変更されたように見える（実際は改行コードの違いのみ）
+- 他のメンバーとのコンフリクトが頻発する
+- PR作成時に意図しない大量の変更が表示される
+
+**解決方法:**
 ```bash
-# .gitattributesファイルをプロジェクトルートに作成
+# プロジェクトルートで実行（チームメンバーと相談後）
 echo "* text=auto eol=lf" > .gitattributes
 git add .gitattributes
 git commit -m "chore: 改行コードをLFに統一"
+
+# 既存ファイルの改行コードを統一
+git add --renormalize .
+git commit -m "chore: 既存ファイルの改行コードを統一"
+```
+
+**予防策:**
+```bash
+# Git初期設定で改行コード自動変換を設定（WSL2内）
+git config --global core.autocrlf input
+git config --global core.eol lf
 ```
 
 ### よくあるGitトラブルと解決法
