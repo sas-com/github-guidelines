@@ -316,7 +316,7 @@ npm test -- --watch
 
 - 日次スタンドアップ: 10:00
 - 週次レビュー: 金曜 15:00
-- Slackチャンネル: #proj-[project-name]
+- Teamsチャンネル: #proj-[project-name]
 
 ## ❓ よくある質問
 

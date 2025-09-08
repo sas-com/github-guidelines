@@ -197,7 +197,7 @@ git push origin dev --force-with-lease  # 将来はmain
 # Settings → Branches → Protection rules → 再度有効化
 
 # 4. 全開発者に通知
-# Slackで周知: @here devブランチを復旧しました。最新をpullしてください
+# Teamsで周知: @here devブランチを復旧しました。最新をpullしてください
 ```
 
 ### 3. 大規模マージコンフリクト
@@ -283,7 +283,7 @@ graph TD
     B -->|L1| C[即座にCTO連絡]
     B -->|L2| D[SAS Github管理チーム連絡]
     B -->|L3| E[チームリーダー連絡]
-    B -->|L4| F[Slack通知]
+    B -->|L4| F[Teams通知]
     C --> G[対策本部設置]
     D --> H[対応チーム編成]
 ```
