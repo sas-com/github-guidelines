@@ -218,6 +218,7 @@ git config --global --list
 ```bash
 # SSH鍵の生成
 ssh-keygen -t ed25519 -C "yamada@sas-com.co.jp"
+# ed25519: RSAより高速で安全、GitHubが推奨する現代的な暗号化アルゴリズム
 # Enterを3回押してデフォルト設定で作成
 
 # SSH鍵の確認
@@ -229,11 +230,17 @@ cat ~/.ssh/id_ed25519.pub
 # 表示された内容を全てコピー（ssh-ed25519から最後まで）
 
 # GitHubに登録
-# 1. GitHub Settings → SSH and GPG keys
-# 2. New SSH key
-# 3. タイトル: "会社PC - WSL2" など識別できる名前
-# 4. Key: コピーした公開鍵をペースト
-# 5. Add SSH key
+# 1. GitHubにログインし、右上のプロフィール画像をクリック
+# 2. ドロップダウンメニューから「Settings」を選択
+# 3. 左側のサイドバーで「SSH and GPG keys」をクリック
+# 4. 緑色の「New SSH key」ボタンをクリック
+# 5. SSH key追加画面で以下を入力：
+#    - Title: "会社PC - WSL2" など識別できる名前を入力
+#    - Key type: "Authentication Key" を選択（デフォルト）
+#    - Key: コピーした公開鍵の全文をペースト
+#      （ssh-ed25519 から最後のメールアドレスまで全て）
+# 6. 緑色の「Add SSH key」ボタンをクリック
+# 7. GitHubのパスワード入力を求められたら入力して確認
 
 # 接続テスト
 ssh -T git@github.com
