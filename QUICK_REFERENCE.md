@@ -3,6 +3,35 @@
 **エス・エー・エス株式会社**  
 *開発者向け簡易マニュアル*
 
+## 📥 リポジトリクローン方法
+
+### 推奨: SSH方式（セキュア）
+```bash
+# SSH鍵設定後に使用（推奨）
+git clone git@github.com:sas-com/repository-name.git
+```
+
+**メリット**: パスワード不要、最もセキュア、GitHubが推奨
+
+### HTTPS方式（制限環境）
+```bash
+# ファイアウォール等でSSHがブロックされる場合
+git clone https://github.com/sas-com/repository-name.git
+```
+
+**メリット**: 設定不要  
+**デメリット**: Personal Access Token管理が必要
+
+### GitHub CLI（高度な操作）
+```bash
+# GitHub CLI使用
+gh repo clone sas-com/repository-name
+```
+
+**メリット**: GitHub特有機能が豊富
+
+---
+
 ## 🚀 日常作業フロー
 
 ### 1️⃣ 作業開始（朝一番）
