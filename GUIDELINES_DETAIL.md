@@ -873,7 +873,7 @@ graph TD
 | **技術的問題** | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
 | **権限・アクセス** | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
 | **セキュリティ** | SAS Github管理チーム (github@sas-com.com) | 24時間 |
-| **緊急時** | 担当プロジェクトマネージャー・担当リーダー | 24時間 |
+| **緊急時** | SAS Github管理チーム (github@sas-com.com) | 24時間 |
 
 ### 有用なリソース
 

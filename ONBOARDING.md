@@ -512,10 +512,10 @@ git commit -m "resolve: コンフリクトを解決"
 
 | 相談内容 | 連絡先 | 備考 |
 |---------|--------|------|
-| Git/GitHub操作 | メンターまたはSlack #tech-support | まずメンターに |
+| Git/GitHub操作 | SAS Github管理チーム (github@sas-com.com) | 技術サポート |
 | アクセス権限 | SAS Github管理チーム (github@sas-com.com) | 管理者対応 |
 | セキュリティインシデント | SAS Github管理チーム (github@sas-com.com) | 即座に連絡 |
-| WSL2の問題 | Slack #tech-support | 環境構築サポート |
+| WSL2の問題 | SAS Github管理チーム (github@sas-com.com) | 環境構築サポート |
 
 ---
 

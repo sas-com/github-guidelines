@@ -158,9 +158,9 @@ npm run deploy:staging
 
 | 役割 | 担当者 | 連絡先 |
 |------|--------|--------|
-| プロジェクトマネージャー | [名前] | [メール] |
-| テックリード | [名前] | [メール] |
-| クライアント担当者 | [名前] | [メール] |
+| プロジェクト全般 | SAS Github管理チーム | github@sas-com.com |
+| 技術サポート | SAS Github管理チーム | github@sas-com.com |
+| 緊急時対応 | SAS Github管理チーム | github@sas-com.com |
 
 ## 📚 関連ドキュメント
 
