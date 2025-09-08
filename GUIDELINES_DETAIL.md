@@ -76,10 +76,10 @@
 
 #### 例
 ```
-abc-corp-ec-site-frontend     # ABC社ECサイトのフロントエンド
-abc-corp-ec-site-backend      # ABC社ECサイトのバックエンド
-xyz-inc-mobile-app            # XYZ社モバイルアプリ
-internal-tool-admin           # 社内ツール
+abc-ecsite-frontend          # ABC社ECサイトのフロントエンド
+abc-ecsite-backend           # ABC社ECサイトのバックエンド
+xyz-mobile-app               # XYZ社モバイルアプリ
+internal-tool-admin          # 社内ツール
 ```
 
 ### リポジトリ設定チェックリスト
