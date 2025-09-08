@@ -422,25 +422,61 @@ hotfix/[説明]     # 緊急修正
 
 ```mermaid
 graph LR
-    A[プロジェクトアサイン] --> B[権限付与]
-    B --> C[リポジトリクローン]
-    C --> D[環境構築]
-    D --> E[Issue割り当て]
-    E --> F[開発開始]
+    A[Step1: プロジェクトアサイン] --> B[Step2: 権限付与]
+    B --> C[Step3: リポジトリクローン]
+    C --> D[Step4: 環境構築]
+    D --> E[Step5: Issue割り当て]
+    E --> F[Step6: 開発開始]
 ```
 
 ### 実際のプロジェクト参加手順
 
+#### Step1: プロジェクトアサイン
+```markdown
+【管理者が実施】
+- プロジェクトへのメンバーアサイン
+- 役割・責任範囲の明確化
+- プロジェクトキックオフ参加
+
+【参加者が実施】
+- プロジェクト概要資料の確認
+- チームメンバーとの顔合わせ
+- 担当領域の理解
+```
+
+#### Step2: 権限付与
+```markdown
+【管理者が実施】
+- GitHubリポジトリへのアクセス権限付与
+- 開発環境のアカウント作成
+- 必要なシステムへのアクセス権限付与
+
+【参加者が実施】
+- 権限付与の確認とテスト
+- 必要なツールへのログイン確認
+```
+
+#### Step3: リポジトリクローン
 ```bash
-# 1. プロジェクトディレクトリを作成
+# プロジェクトディレクトリを作成
 mkdir ~/projects/client-name
 cd ~/projects/client-name
 
-# 2. リポジトリをクローン
+# リポジトリをクローン
 git clone git@github.com:sas-com/[repository-name].git
 cd [repository-name]
 
-# 3. 環境構築（プロジェクトによって異なる）
+# ブランチ構成の確認
+git branch -a
+git checkout dev  # 現在運用中のdevブランチ
+```
+
+#### Step4: 環境構築
+```bash
+# プロジェクトのREADMEを必ず確認
+cat README.md
+
+# 依存関係のインストール
 # Node.jsプロジェクトの例
 npm install
 
@@ -449,12 +485,43 @@ python -m venv venv
 source venv/bin/activate  # WSL2
 pip install -r requirements.txt
 
-# 4. 環境変数の設定
+# 環境変数の設定
 cp .env.example .env
 # .envファイルを編集して必要な値を設定
 
-# 5. 動作確認
+# 動作確認
 npm start  # または python app.py など
+```
+
+#### Step5: Issue割り当て
+```markdown
+【管理者が実施】
+- GitHub Issuesで初回タスクを作成
+- 適切な難易度のタスクをアサイン
+- ラベルとマイルストーンの設定
+
+【参加者が実施】
+- アサインされたIssueの確認
+- 要件と期待値の理解
+- 不明点があれば質問・相談
+```
+
+#### Step6: 開発開始
+```bash
+# 最新の開発ブランチから作業ブランチを作成
+git checkout dev
+git pull origin dev
+git checkout -b feature/123-initial-task
+
+# 開発作業
+# ... コーディング作業 ...
+
+# コミット・プッシュ・PR作成
+git add .
+git commit -m "feat(module): 初回タスクの実装"
+git push origin feature/123-initial-task
+
+# GitHubでPR作成後、レビュー依頼
 ```
 
 ### 👥 メンター制度
