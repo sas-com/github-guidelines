@@ -95,7 +95,7 @@ git push --force
 ### 漏洩内容
 - 種類: [APIキー/パスワード/秘密鍵]
 - サービス: [AWS/GitHub/Database等]
-- 影響範囲: [本番/ステージング/開発]
+- 影響範囲: [本番(今後)/ステージング(今後)/開発(現在)]
 
 ### 実施済み対応
 - [ ] 認証情報の無効化（完了時刻: ）
@@ -158,13 +158,14 @@ git push --force
 
 ## 💥 システム障害
 
-### 1. 本番環境への誤デプロイ
+### 1. 本番環境への誤デプロイ（将来のケース）
 
 #### 対応手順
 
 ```bash
 # 1. 即座にロールバック
 git revert [問題のコミットハッシュ]
+# 将来: mainブランチにプッシュ
 git push origin main --force-with-lease
 
 # 2. デプロイパイプラインの停止
@@ -178,7 +179,7 @@ git push origin main --force-with-lease
 kubectl rollout undo deployment/[deployment-name]
 ```
 
-### 2. mainブランチの破壊
+### 2. 重要ブランチの破壊（現在はdev、将来はmain）
 
 #### 対応手順
 
@@ -187,15 +188,16 @@ kubectl rollout undo deployment/[deployment-name]
 # Settings → Branches → Protection rules → Edit
 
 # 2. バックアップから復元
-git checkout main
+# 現在はdevブランチを復旧
+git checkout dev  # 将来はmain
 git reset --hard [最後の正常なコミット]
-git push origin main --force-with-lease
+git push origin dev --force-with-lease  # 将来はmain
 
 # 3. ブランチ保護を再設定
 # Settings → Branches → Protection rules → 再度有効化
 
 # 4. 全開発者に通知
-# Slackで周知: @here mainブランチを復旧しました。最新をpullしてください
+# Slackで周知: @here devブランチを復旧しました。最新をpullしてください
 ```
 
 ### 3. 大規模マージコンフリクト
@@ -207,10 +209,10 @@ git push origin main --force-with-lease
 git branch backup-[date]
 
 # 2. コンフリクト解決
-git checkout develop
-git pull origin develop
+git checkout dev
+git pull origin dev
 git checkout feature/[branch]
-git rebase develop  # または merge
+git rebase dev  # または merge
 
 # 3. 手動でコンフリクト解決
 # VSCode等のマージツールを使用
@@ -223,29 +225,30 @@ git rebase develop  # または merge
 
 ## 🔥 Hotfixフロー
 
-### 本番環境の緊急修正
+### 緊急修正フロー
 
 ```mermaid
 graph TD
     A[本番障害発生] --> B{緊急度判定}
     B -->|L1-L2| C[Hotfix開始]
     B -->|L3-L4| D[通常フロー]
-    C --> E[mainからブランチ作成]
+    C --> E[現在:dev / 将来:mainからブランチ作成]
     E --> F[修正実施]
     F --> G[最小限のテスト]
     G --> H[緊急PR作成]
     H --> I[優先レビュー]
-    I --> J[mainへマージ]
-    J --> K[本番デプロイ]
-    K --> L[developへバックポート]
+    I --> J[現在:dev / 将来:mainへマージ]
+    J --> K[デプロイ]
+    K --> L[他環境へバックポート(将来)]
 ```
 
 ### Hotfixコマンド
 
 ```bash
 # Hotfixブランチ作成
-git checkout main
-git pull origin main
+# 現在はdevブランチから作成
+git checkout dev  # 将来はmain
+git pull origin dev  # 将来はmain
 git checkout -b hotfix/999-critical-bug
 
 # 修正実施
@@ -253,7 +256,7 @@ git checkout -b hotfix/999-critical-bug
 
 # コミット
 git add .
-git commit -m "hotfix: [緊急度L1] 本番環境のクリティカルバグを修正
+git commit -m "hotfix: [緊急度L1] クリティカルバグを修正
 
 問題: ログイン機能が完全に停止
 原因: 認証サーバーのURLタイポ
@@ -264,11 +267,8 @@ Fixes #999"
 # プッシュとPR
 git push origin hotfix/999-critical-bug
 
-# マージ後、developにも反映
-git checkout develop
-git pull origin develop
-git merge main
-git push origin develop
+# マージ後の処理（将来は他環境へのバックポート）
+# 現在はdev環境のみのためスキップ
 ```
 
 ---
@@ -461,8 +461,8 @@ GitHub Actions:
 ### 訓練シナリオ例
 
 1. **セキュリティインシデント**: APIキーの漏洩を想定
-2. **システム障害**: 本番環境の全面停止を想定
-3. **データ損失**: mainブランチの破壊を想定
+2. **システム障害**: 環境の全面停止を想定
+3. **データ損失**: 重要ブランチの破壊を想定
 4. **外部攻撃**: 不正アクセスを想定
 
 ---

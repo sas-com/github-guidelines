@@ -9,15 +9,15 @@
 
 ```bash
 # 最新情報を取得
-git checkout develop
-git pull origin develop
+git checkout dev  # 現在運用中
+git pull origin dev
 
 # 作業ブランチを作成
 git checkout -b feature/123-new-feature
 
 # または既存ブランチで作業継続
 git checkout feature/existing-feature
-git merge develop  # 最新のdevelopを取り込む
+git merge dev  # 最新のdevを取り込む
 ```
 
 ### 2️⃣ コーディング作業
@@ -64,9 +64,9 @@ git push origin feature/123-new-feature
 ### 5️⃣ マージ後の処理
 
 ```bash
-# developに戻る
-git checkout develop
-git pull origin develop
+# devに戻る
+git checkout dev
+git pull origin dev
 
 # 作業ブランチを削除
 git branch -d feature/123-new-feature
@@ -134,9 +134,10 @@ Issue: #番号
 ### Hotfixの作り方
 
 ```bash
-# mainから直接ブランチを作成
-git checkout main
-git pull origin main
+# 緊急修正の場合（将来はmainから作成）
+# 現在はdevから作成
+git checkout dev
+git pull origin dev
 git checkout -b hotfix/999-urgent-fix
 
 # 修正作業
@@ -147,14 +148,12 @@ git add .
 git commit -m "hotfix: 緊急バグを修正"
 git push origin hotfix/999-urgent-fix
 
-# PR作成（mainへ）
+# PR作成（現在はdevへ）
 # レビュー最優先で依頼
 
-# マージ後、developにも反映
-git checkout develop
-git pull origin develop
-git merge main
-git push origin develop
+# マージ後の処理
+git checkout dev
+git pull origin dev
 ```
 
 ### 間違えたときの対処

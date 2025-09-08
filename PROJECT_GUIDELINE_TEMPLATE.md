@@ -100,8 +100,16 @@ project-root/
 
 ### ブランチ戦略
 
+#### 現在の構成（デフォルト）
+- `dev`: 開発環境（現在運用中）
+- `feature/*`: 機能開発
+- `bugfix/*`: バグ修正
+- `hotfix/*`: 緊急修正
+
+#### 将来の構成（3環境運用時）
 - `main`: 本番環境
-- `develop`: 開発環境（使用する場合）
+- `staging`: ステージング環境
+- `dev`: 開発環境
 - `feature/*`: 機能開発
 - `bugfix/*`: バグ修正
 - `hotfix/*`: 緊急修正
@@ -117,9 +125,9 @@ project-root/
 
 | 環境 | URL | ブランチ | 備考 |
 |------|-----|----------|------|
-| 本番 | https://production.example.com | main | |
-| ステージング | https://staging.example.com | staging | |
-| 開発 | https://dev.example.com | develop | |
+| 本番 | https://production.example.com | main | 今後構築予定 |
+| ステージング | https://staging.example.com | staging | 今後構築予定 |
+| 開発 | https://dev.example.com | dev | 現在運用中 |
 
 ## 🧪 テスト
 
@@ -204,9 +212,9 @@ npm run deploy:staging
 ### 2. ブランチの作成
 
 \```bash
-# 最新のdevelopを取得
-git checkout develop
-git pull origin develop
+# 最新のdevを取得
+git checkout dev
+git pull origin dev
 
 # 作業ブランチを作成
 git checkout -b feature/[issue-number]-[feature-name]
@@ -291,7 +299,12 @@ npm test -- --watch
 
 ## 🚀 リリースプロセス
 
-1. develop → staging へPR
+### 現在のフロー
+1. devブランチで開発・テスト
+2. devブランチからデプロイ
+
+### 将来のフロー（3環境構成時）
+1. dev → staging へPR
 2. ステージング環境でテスト
 3. staging → main へPR
 4. プロダクトオーナーの承認
