@@ -307,11 +307,8 @@ git stash clear
 
 ### インストール
 ```bash
-# Mac
-brew install gh
-
-# Ubuntu/Debian
-apt install gh
+# Windows (WSL2で実行)
+sudo apt install gh
 
 # Windows (winget)
 winget install --id GitHub.cli

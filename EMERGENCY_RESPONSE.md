@@ -60,17 +60,17 @@
 # Settings → Danger Zone → Change visibility
 
 # 3. 履歴から削除（BFG Repo-Cleanerを使用）
-# BFGのインストール
-brew install bfg  # Mac
-# または https://rtyley.github.io/bfg-repo-cleaner/ からダウンロード
+# BFGのダウンロード（Windows）
+# https://rtyley.github.io/bfg-repo-cleaner/ からbfg-x.x.x.jar をダウンロード
 
 # リポジトリのクローン
 git clone --mirror git@github.com:sas-com/[repository].git
 
+# WSL2で実行
 # 機密情報を含むファイルを削除
-bfg --delete-files [filename] [repository].git
+java -jar bfg-x.x.x.jar --delete-files [filename] [repository].git
 # またはテキストを削除
-bfg --replace-text passwords.txt [repository].git
+java -jar bfg-x.x.x.jar --replace-text passwords.txt [repository].git
 
 # 履歴のクリーンアップ
 cd [repository].git

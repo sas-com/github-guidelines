@@ -199,7 +199,7 @@ Settings → Security → Security log
 
 ### 4.1 SSH鍵の生成
 
-**Windows (WSL2) / Mac / Linux共通：**
+**Windows (WSL2で実行)：**
 
 ```bash
 # 1. SSH鍵を生成
@@ -219,15 +219,12 @@ ls -la ~/.ssh/
 
 ```bash
 # 1. 公開鍵の内容をコピー
-# Mac:
-pbcopy < ~/.ssh/id_ed25519.pub
+# WSL2で実行:
+cat ~/.ssh/id_ed25519.pub | clip.exe
 
-# Linux/WSL2:
+# または手動でコピー:
 cat ~/.ssh/id_ed25519.pub
-# 表示された内容を手動でコピー
-
-# Windows (Git Bash):
-cat ~/.ssh/id_ed25519.pub | clip
+# 表示された内容を選択してコピー
 ```
 
 **GitHub側の設定：**
@@ -299,10 +296,8 @@ git config --global core.editor "code --wait"  # VS Code
 git config --global core.quotepath false
 
 # 改行コード設定
-# Windows
+# Windows（WSL2）
 git config --global core.autocrlf true
-# Mac/Linux
-git config --global core.autocrlf input
 
 # プッシュ設定
 git config --global push.default current
@@ -319,14 +314,8 @@ git config --global --list
 **認証ヘルパーの設定：**
 
 ```bash
-# Mac
-git config --global credential.helper osxkeychain
-
-# Windows
-git config --global credential.helper manager
-
-# Linux
-git config --global credential.helper store  # 平文保存（非推奨）
+# Windows（WSL2）
+git config --global credential.helper store
 # または
 git config --global credential.helper cache  # 一時的にメモリに保存
 ```

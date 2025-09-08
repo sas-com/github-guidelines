@@ -20,10 +20,10 @@ graph TD
     B --> C[Day 3: 実践演習]
     C --> D[プロジェクト参加]
     
-    A --> A1[WSL2インストール<br/>15-30分]
-    A --> A2[Gitインストール<br/>10分]
+    A --> A1[WSL2インストール<br/>（Windows必須）<br/>15-30分]
+    A --> A2[Gitインストール<br/>（WSL2内）<br/>10分]
     A --> A3[GitHubアカウント作成<br/>20分]
-    A --> A4[SSH鍵設定<br/>15分]
+    A --> A4[SSH鍵設定<br/>（WSL2内）<br/>15分]
     
     B --> B1[Git基本操作<br/>1-2時間]
     B --> B2[GitHub機能理解<br/>1時間]
@@ -40,7 +40,7 @@ graph TD
 ### ✅ チェックリスト
 
 #### **Day 1: 環境構築**（所要時間: 約1-2時間）
-- [ ] WSL2のインストール（Windows環境の場合）
+- [ ] WSL2のインストール（Windows必須）
 - [ ] Gitのインストールと初期設定
 - [ ] GitHubアカウント作成と2FA設定
 - [ ] SSH鍵の生成と登録
@@ -77,7 +77,7 @@ graph TD
 
 ---
 
-## 🖥️ 事前準備: WSL2のインストール（Windows環境の場合）
+## 🖥️ 事前準備: WSL2のインストール（Windows必須）
 
 ### WSL2とは
 Windows Subsystem for Linux 2（WSL2）は、Windows上でLinux環境を動作させる仕組みです。
@@ -191,7 +191,7 @@ code .
 
 ### 🔧 Git初期設定
 
-**WSL2/Linux/Mac環境で実行：**
+**WSL2で実行：**
 
 ```bash
 # ユーザー情報設定
@@ -201,10 +201,7 @@ git config --global user.email "yamada@sas-com.co.jp"
 # エディタ設定（VS Codeの場合）
 git config --global core.editor "code --wait"
 
-# 改行コード設定
-# Windowsの場合（WSL2内）
-git config --global core.autocrlf input
-# Mac/Linuxの場合
+# 改行コード設定（WSL2内）
 git config --global core.autocrlf input
 
 # 日本語ファイル名の文字化け防止
@@ -216,7 +213,7 @@ git config --global --list
 
 ### 🔑 SSH鍵の設定
 
-**WSL2/Linux/Mac環境で実行：**
+**WSL2で実行：**
 
 ```bash
 # SSH鍵の生成
@@ -440,7 +437,7 @@ npm install
 
 # Pythonプロジェクトの例
 python -m venv venv
-source venv/bin/activate  # WSL2/Linux/Mac
+source venv/bin/activate  # WSL2
 pip install -r requirements.txt
 
 # 4. 環境変数の設定
