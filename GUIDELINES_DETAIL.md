@@ -856,10 +856,10 @@ graph TD
     A[問題発生] --> B{解決できる？}
     B -->|Yes| C[自己解決]
     B -->|No| D{技術的問題？}
-    D -->|Yes| E[テックリードに相談]
+    D -->|Yes| E[SAS Github管理チームに相談]
     D -->|No| F{権限問題？}
-    F -->|Yes| G[管理者に連絡]
-    F -->|No| H[PMに相談]
+    F -->|Yes| G[SAS Github管理チームに連絡]
+    F -->|No| H[SAS Github管理チームに相談]
 ```
 
 ---

@@ -486,8 +486,8 @@ chmod 700 ~/.ssh
 | 内容 | 連絡先 | 対応時間 |
 |------|--------|----------|
 | アカウント作成支援 | SAS Github管理チーム (github@sas-com.com) | 平日 9:00-18:00 |
-| 技術的な質問 | Slack #tech-support | 平日 9:00-18:00 |
-| 組織への招待 | 各プロジェクトマネージャー | 営業時間内 |
+| 技術的な質問 | SAS Github管理チーム (github@sas-com.com) | 平日 9:00-18:00 |
+| 組織への招待 | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
 
 ---
 
