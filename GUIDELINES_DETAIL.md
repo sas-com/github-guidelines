@@ -70,16 +70,28 @@
 
 ### リポジトリ命名規則
 
+#### 基本形式
 ```
 [クライアント略称]-[プロジェクト名]-[種別]
 ```
 
+#### 必須要素
+- **[クライアント略称]**: 必須（2-4文字の英小文字）
+- **[プロジェクト名]**: 必須（プロジェクトを表す英小文字）
+- **[種別]**: 任意（frontend, backend, app, tool等）
+
 #### 例
 ```
+# 種別ありパターン（推奨）
 abc-ecsite-frontend          # ABC社ECサイトのフロントエンド
 abc-ecsite-backend           # ABC社ECサイトのバックエンド
 xyz-mobile-app               # XYZ社モバイルアプリ
 internal-tool-admin          # 社内ツール
+
+# 種別なしパターン（最小構成）
+abc-ecsite                   # ABC社ECサイト（単一リポジトリ）
+xyz-mobile                   # XYZ社モバイル（フルスタック）
+internal-crm                 # 社内CRM
 ```
 
 ### リポジトリ設定チェックリスト
