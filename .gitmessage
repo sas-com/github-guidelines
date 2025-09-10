@@ -1,0 +1,48 @@
+# SAS コミットメッセージテンプレート
+# 
+# フォーマット: <type>[scope]: <description>
+# 例: feat(auth): OAuth2.0ログイン機能を追加
+#
+# Type (必須):
+#   feat     - 新機能の追加
+#   fix      - バグ修正  
+#   docs     - ドキュメント変更のみ
+#   style    - フォーマット変更（動作に影響なし）
+#   refactor - リファクタリング
+#   test     - テストの追加・修正
+#   chore    - ビルドプロセス・補助ツールの変更
+#   security - セキュリティ関連の修正
+#   perf     - パフォーマンス改善
+#   build    - ビルドシステム変更
+#   ci       - CI設定変更
+#   revert   - コミットの取り消し
+#   hotfix   - 緊急修正
+#
+# Scope (任意):
+#   機能領域: auth, api, ui, db, payment, notification
+#   モジュール: user, product, order, admin, config
+#   コンポーネント: header, sidebar, modal, form, table
+#   ツール: webpack, eslint, jest, docker, k8s
+#   環境: dev, staging, prod, test
+#   ドキュメント: readme, docs, changelog, setup
+#
+# Description ガイドライン:
+#   - 72文字以内（日本語は50文字程度推奨）
+#   - 命令形で記述（「追加する」ではなく「追加」）
+#   - 小文字で開始、末尾のピリオド不要
+#   - 日本語推奨
+#
+# 詳細説明（任意）:
+# 空行の後に変更の詳細を記述
+# - 変更の理由や背景
+# - 影響範囲
+# - 注意事項
+# 各行100文字以内
+#
+# Footer（任意）:
+# Closes #123
+# Fixes #456
+# BREAKING CHANGE: APIレスポンス形式を変更
+# Co-authored-by: name <email@sas-com.com>
+#
+# 詳細: COMMIT_CONVENTION_GUIDE.md を参照

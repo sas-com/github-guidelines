@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  ml-api:
+    build: .
+    container_name: github-ml-api
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/github_ml
+      - ML_PIPELINE_LOG_LEVEL=INFO
+      - ML_PIPELINE_MODEL_REGISTRY_PATH=/app/models
+      - ML_PIPELINE_FEATURE_STORE_PATH=/app/feature_store
+    volumes:
+      - ./models:/app/models
+      - ./feature_store:/app/feature_store
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: github-ml-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=github_ml
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: github-ml-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: github-ml-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: github-ml-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+  scheduler:
+    build: .
+    container_name: github-ml-scheduler
+    command: python -m ml_pipeline.scheduler
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/github_ml
+      - ML_PIPELINE_LOG_LEVEL=INFO
+    volumes:
+      - ./models:/app/models
+      - ./feature_store:/app/feature_store
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ml-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  ml-network:
+    driver: bridge

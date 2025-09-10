@@ -1,0 +1,388 @@
+name: 🔍 Commit Message Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop, staging]
+  push:
+    branches: [main, develop, staging]
+
+jobs:
+  validate-commits:
+    name: 📋 コミットメッセージ検証
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          # Install additional tools if needed
+          npm install -g @commitlint/cli @commitlint/config-conventional
+
+      - name: 🛡️ Make validation scripts executable
+        run: |
+          chmod +x scripts/validation/validate-commit-message.sh
+          chmod +x scripts/commit-hooks/commit-msg
+
+      - name: 📋 Validate commit messages with commitlint
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Validating commits in PR #${{ github.event.number }}"
+          
+          # Get commits in this PR
+          COMMITS=$(git rev-list --reverse HEAD^..${{ github.event.after }})
+          
+          echo "Commits to validate:"
+          for commit in $COMMITS; do
+            echo "  - $(git log --oneline -1 $commit)"
+          done
+          
+          # Validate each commit
+          for commit in $COMMITS; do
+            echo "::group::Validating commit $commit"
+            COMMIT_MSG=$(git log --format=%B -n 1 $commit)
+            echo "$COMMIT_MSG" | npx commitlint --verbose
+            echo "::endgroup::"
+          done
+
+      - name: 🔍 Custom SAS validation
+        if: github.event_name == 'pull_request'  
+        run: |
+          echo "🔍 Running SAS-specific commit validation"
+          
+          COMMITS=$(git rev-list --reverse HEAD^..${{ github.event.after }})
+          VALIDATION_RESULTS=""
+          FAILED_COMMITS=()
+          
+          for commit in $COMMITS; do
+            echo "::group::SAS Validation for commit $commit"
+            
+            COMMIT_MSG=$(git log --format=%B -n 1 $commit)
+            COMMIT_SUBJECT=$(git log --format=%s -n 1 $commit)
+            
+            echo "Commit: $COMMIT_SUBJECT"
+            
+            # Create temporary file for validation
+            TEMP_MSG_FILE="/tmp/commit-msg-$commit"
+            echo "$COMMIT_MSG" > "$TEMP_MSG_FILE"
+            
+            # Run custom validation
+            if ./scripts/validation/validate-commit-message.sh "$TEMP_MSG_FILE"; then
+              echo "✅ Commit $commit passed SAS validation"
+              VALIDATION_RESULTS+="✅ \`$commit\`: $COMMIT_SUBJECT\n"
+            else
+              echo "❌ Commit $commit failed SAS validation"
+              VALIDATION_RESULTS+="❌ \`$commit\`: $COMMIT_SUBJECT\n"
+              FAILED_COMMITS+=($commit)
+            fi
+            
+            rm -f "$TEMP_MSG_FILE"
+            echo "::endgroup::"
+          done
+          
+          # Export results for comment
+          echo "VALIDATION_RESULTS<<EOF" >> $GITHUB_ENV
+          echo -e "$VALIDATION_RESULTS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "FAILED_COUNT=${#FAILED_COMMITS[@]}" >> $GITHUB_ENV
+          
+          # Fail if any commits failed validation
+          if [ ${#FAILED_COMMITS[@]} -gt 0 ]; then
+            echo "::error::${#FAILED_COMMITS[@]} commit(s) failed SAS validation"
+            exit 1
+          fi
+
+      - name: 📝 Comment validation results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { VALIDATION_RESULTS, FAILED_COUNT } = process.env;
+            const prNumber = context.payload.pull_request.number;
+            
+            let status = '';
+            let color = '';
+            
+            if (FAILED_COUNT === '0') {
+              status = '✅ **すべてのコミットが規約に適合しています**';
+              color = '28a745';
+            } else {
+              status = `❌ **${FAILED_COUNT}個のコミットが規約に適合していません**`;
+              color = 'dc3545';
+            }
+            
+            const commentBody = `
+            ## 🔍 SAS コミットメッセージ検証結果
+            
+            ${status}
+            
+            ### 📋 検証結果詳細
+            ${VALIDATION_RESULTS || 'No commits to validate.'}
+            
+            ### 📚 参考資料
+            - 📖 [コミット規約ガイドライン](./COMMIT_CONVENTION_GUIDE.md)
+            - 🛠️ [セットアップガイド](./scripts/setup/README.md)  
+            - 🌐 [Conventional Commits](https://www.conventionalcommits.org/)
+            
+            ### 💡 よくある修正例
+            \`\`\`diff
+            - update: 機能を修正
+            + fix(api): レスポンス形式エラーを修正
+            
+            - feat: 新機能追加しました
+            + feat(auth): OAuth2.0ログイン機能を追加
+            
+            - docs: README更新
+            + docs(readme): セットアップ手順を更新
+            \`\`\`
+            
+            <sub>🤖 このコメントは GitHub Actions により自動生成されました</sub>
+            `;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes('🔍 SAS コミットメッセージ検証結果')
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            }
+
+  security-scan:
+    name: 🔒 セキュリティスキャン
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Scan for secrets in commit messages
+        run: |
+          echo "🔍 Scanning commit messages for potential secrets..."
+          
+          COMMITS=$(git rev-list --reverse HEAD^..${{ github.event.after }})
+          SECURITY_ISSUES=()
+          
+          # Patterns to check for
+          PATTERNS=(
+            "password\s*[:=]\s*[\"']?[^\"'\s]+"
+            "api[_-]?key\s*[:=]\s*[\"']?[^\"'\s]+"
+            "secret\s*[:=]\s*[\"']?[^\"'\s]+"
+            "token\s*[:=]\s*[\"']?[^\"'\s]+"
+            "Bearer\s+[a-zA-Z0-9\.\-_]+"
+            "[a-zA-Z0-9]{32,}"
+            "mysql://.*:[^@]+@"
+            "postgresql://.*:[^@]+@"
+          )
+          
+          for commit in $COMMITS; do
+            COMMIT_MSG=$(git log --format=%B -n 1 $commit)
+            COMMIT_SUBJECT=$(git log --format=%s -n 1 $commit)
+            
+            for pattern in "${PATTERNS[@]}"; do
+              if echo "$COMMIT_MSG" | grep -qiE "$pattern"; then
+                echo "⚠️ Potential security issue in commit $commit: $COMMIT_SUBJECT"
+                SECURITY_ISSUES+=("$commit: $COMMIT_SUBJECT")
+              fi
+            done
+          done
+          
+          if [ ${#SECURITY_ISSUES[@]} -gt 0 ]; then
+            echo "::error::Potential security issues found in commit messages"
+            echo "SECURITY_ISSUES_FOUND=true" >> $GITHUB_ENV
+            
+            # Save issues for comment
+            printf '%s\n' "${SECURITY_ISSUES[@]}" > /tmp/security_issues.txt
+          else
+            echo "✅ No security issues found in commit messages"
+            echo "SECURITY_ISSUES_FOUND=false" >> $GITHUB_ENV
+          fi
+
+      - name: 📝 Comment security warnings
+        if: env.SECURITY_ISSUES_FOUND == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const prNumber = context.payload.pull_request.number;
+            
+            let issues = '';
+            try {
+              issues = fs.readFileSync('/tmp/security_issues.txt', 'utf8');
+            } catch (error) {
+              issues = 'Error reading security issues file';
+            }
+            
+            const commentBody = `
+            ## 🔒 セキュリティ警告
+            
+            ⚠️ **コミットメッセージに機密情報の可能性がある内容が含まれています**
+            
+            ### 検出された問題:
+            \`\`\`
+            ${issues}
+            \`\`\`
+            
+            ### 対応方法:
+            1. コミットメッセージから機密情報を削除
+            2. 必要に応じてコミット履歴の書き換え
+            3. 漏洩した可能性がある情報の無効化
+            
+            ### 注意事項:
+            - パスワード、APIキー、トークンは絶対にコミットしない
+            - 個人情報や機密データは含めない
+            - 疑いがある場合はセキュリティチーム(security@sas-com.com)に連絡
+            
+            <sub>🤖 このコメントは GitHub Actions により自動生成されました</sub>
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });
+
+  quality-metrics:
+    name: 📊 品質メトリクス
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📈 Generate commit metrics
+        run: |
+          echo "📊 Generating commit quality metrics..."
+          
+          COMMITS=$(git rev-list --reverse HEAD^..${{ github.event.after }})
+          TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
+          
+          # Count by type
+          FEAT_COUNT=0
+          FIX_COUNT=0
+          DOCS_COUNT=0
+          OTHER_COUNT=0
+          
+          # Analyze each commit
+          for commit in $COMMITS; do
+            SUBJECT=$(git log --format=%s -n 1 $commit)
+            
+            if [[ $SUBJECT =~ ^feat ]]; then
+              ((FEAT_COUNT++))
+            elif [[ $SUBJECT =~ ^fix ]]; then
+              ((FIX_COUNT++))
+            elif [[ $SUBJECT =~ ^docs ]]; then
+              ((DOCS_COUNT++))
+            else
+              ((OTHER_COUNT++))
+            fi
+          done
+          
+          # Calculate percentages
+          FEAT_PERCENT=$((FEAT_COUNT * 100 / TOTAL_COMMITS))
+          FIX_PERCENT=$((FIX_COUNT * 100 / TOTAL_COMMITS))
+          DOCS_PERCENT=$((DOCS_COUNT * 100 / TOTAL_COMMITS))
+          OTHER_PERCENT=$((OTHER_COUNT * 100 / TOTAL_COMMITS))
+          
+          # Save metrics
+          echo "TOTAL_COMMITS=$TOTAL_COMMITS" >> $GITHUB_ENV
+          echo "FEAT_COUNT=$FEAT_COUNT" >> $GITHUB_ENV
+          echo "FIX_COUNT=$FIX_COUNT" >> $GITHUB_ENV
+          echo "DOCS_COUNT=$DOCS_COUNT" >> $GITHUB_ENV
+          echo "OTHER_COUNT=$OTHER_COUNT" >> $GITHUB_ENV
+          echo "FEAT_PERCENT=$FEAT_PERCENT" >> $GITHUB_ENV
+          echo "FIX_PERCENT=$FIX_PERCENT" >> $GITHUB_ENV
+          echo "DOCS_PERCENT=$DOCS_PERCENT" >> $GITHUB_ENV
+          echo "OTHER_PERCENT=$OTHER_PERCENT" >> $GITHUB_ENV
+
+      - name: 📊 Comment quality metrics
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const {
+              TOTAL_COMMITS, FEAT_COUNT, FIX_COUNT, DOCS_COUNT, OTHER_COUNT,
+              FEAT_PERCENT, FIX_PERCENT, DOCS_PERCENT, OTHER_PERCENT
+            } = process.env;
+            
+            const prNumber = context.payload.pull_request.number;
+            
+            const commentBody = `
+            ## 📊 コミット品質メトリクス
+            
+            ### 📈 このPRの統計
+            
+            - **総コミット数**: ${TOTAL_COMMITS}
+            
+            | タイプ | 件数 | 割合 | 説明 |
+            |-------|-----|------|------|
+            | 🆕 feat | ${FEAT_COUNT} | ${FEAT_PERCENT}% | 新機能の追加 |
+            | 🐛 fix | ${FIX_COUNT} | ${FIX_PERCENT}% | バグ修正 |
+            | 📚 docs | ${DOCS_COUNT} | ${DOCS_PERCENT}% | ドキュメント |
+            | 🔧 other | ${OTHER_COUNT} | ${OTHER_PERCENT}% | その他 |
+            
+            ### 💡 品質指標
+            ${FIX_PERCENT > 50 ? '⚠️ バグ修正の割合が高めです。事前テストの強化を検討してください。' : ''}
+            ${FEAT_PERCENT > 70 ? '🚀 新機能が多く含まれています。リリース計画を確認してください。' : ''}
+            ${DOCS_PERCENT === 0 && TOTAL_COMMITS > 3 ? '📝 ドキュメントの更新も検討してください。' : ''}
+            
+            <sub>📊 Generated by GitHub Actions</sub>
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });

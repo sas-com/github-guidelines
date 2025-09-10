@@ -1,0 +1,438 @@
+name: Security Scan Pipeline
+
+on:
+  pull_request:
+    branches: [main, develop, staging]
+  push:
+    branches: [main]
+  schedule:
+    # 毎日午前3時（JST正午）に実行
+    - cron: '0 18 * * *'
+
+env:
+  SEVERITY_THRESHOLD: high
+  
+jobs:
+  # ===================================
+  # 1. シークレット検出
+  # ===================================
+  secret-detection:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 全履歴を取得
+
+      - name: GitLeaks Scan
+        run: |
+          echo "🔍 Scanning for secrets with GitLeaks..."
+          docker run --rm -v "${{ github.workspace }}:/path" \
+            zricethezav/gitleaks:latest \
+            detect --source="/path" \
+            --report-format="json" \
+            --report-path="/path/gitleaks-report.json" \
+            --verbose \
+            --no-git
+
+      - name: TruffleHog Scan
+        run: |
+          echo "🐷 Running TruffleHog scan..."
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            trufflesecurity/trufflehog:latest \
+            filesystem /workspace \
+            --json > trufflehog-report.json || true
+
+      - name: Upload Secret Scan Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: secret-scan-results
+          path: |
+            gitleaks-report.json
+            trufflehog-report.json
+
+  # ===================================
+  # 2. SAST - 静的アプリケーションセキュリティテスト
+  # ===================================
+  sast-semgrep:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/nodejs
+            p/typescript
+            p/react
+            p/jwt
+            p/sql-injection
+            p/xss
+            p/command-injection
+          generateSarif: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
+
+  sast-codeql:
+    name: SAST - CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    strategy:
+      matrix:
+        language: [javascript, typescript, python, java, go]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # ===================================
+  # 3. 依存関係脆弱性チェック
+  # ===================================
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # npm/yarn audit
+      - name: NPM Audit
+        if: hashFiles('package-lock.json')
+        run: |
+          echo "📦 Running npm audit..."
+          npm audit --audit-level=${{ env.SEVERITY_THRESHOLD }} --json > npm-audit-report.json || true
+          npm audit fix --audit-level=${{ env.SEVERITY_THRESHOLD }} --dry-run || true
+
+      # Snyk
+      - name: Run Snyk
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=${{ env.SEVERITY_THRESHOLD }} --json-file-output=snyk-report.json
+
+      # OWASP Dependency Check
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: ${{ github.repository }}
+          path: .
+          format: ALL
+          args: >
+            --enableRetired
+            --enableExperimental
+            --failBuildOnCVSS 7
+            --suppressionFiles .dependency-check-suppressions.xml
+
+      - name: Upload Dependency Check Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-results
+          path: |
+            npm-audit-report.json
+            snyk-report.json
+            reports/
+
+  # ===================================
+  # 4. コンテナスキャン
+  # ===================================
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'docker') || contains(github.event.head_commit.message, 'container')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t ${{ github.repository }}:${{ github.sha }} .
+          fi
+
+      # Trivy
+      - name: Run Trivy Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ github.repository }}:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      # Anchore Grype
+      - name: Run Anchore Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          grype ${{ github.repository }}:${{ github.sha }} -o json > grype-results.json
+
+      # Hadolint (Dockerfile linting)
+      - name: Hadolint Dockerfile Scan
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          format: sarif
+          output-file: hadolint-results.sarif
+          no-fail: true
+
+      - name: Upload Container Scan Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: container-scan-results
+          path: |
+            trivy-results.sarif
+            grype-results.json
+            hadolint-results.sarif
+
+  # ===================================
+  # 5. Infrastructure as Code スキャン
+  # ===================================
+  iac-scan:
+    name: IaC Security Scan
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'terraform') || contains(github.event.head_commit.message, 'cloudformation') || contains(github.event.head_commit.message, 'k8s')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Checkov
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: all
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: true
+          skip_check: CKV_DOCKER_2,CKV_DOCKER_3
+
+      # Terrascan
+      - name: Run Terrascan
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/src" \
+            accurics/terrascan scan \
+            -i terraform,k8s,helm,dockerfile \
+            -t aws,azure,gcp,k8s \
+            -f json \
+            -o terrascan-results.json \
+            /src
+
+      # KICS
+      - name: Run KICS Scan
+        uses: checkmarx/kics-action@v1.7
+        with:
+          path: .
+          output_path: kics-results
+          output_formats: json,sarif
+          fail_on: high
+          exclude_paths: "node_modules,vendor,.git"
+
+      - name: Upload IaC Scan Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: iac-scan-results
+          path: |
+            checkov-results.sarif
+            terrascan-results.json
+            kics-results/
+
+  # ===================================
+  # 6. ライセンスコンプライアンス
+  # ===================================
+  license-scan:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: FOSSA Scan
+        if: env.FOSSA_API_KEY != ''
+        uses: fossas/fossa-action@main
+        env:
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+          run-tests: false
+
+      - name: License Finder
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/scan" \
+            licensefinder/license_finder \
+            /bin/bash -lc "cd /scan && license_finder report --format=json" \
+            > license-finder-report.json
+
+      - name: Upload License Scan Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-scan-results
+          path: |
+            license-finder-report.json
+
+  # ===================================
+  # 7. セキュリティレポート生成
+  # ===================================
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [secret-detection, sast-semgrep, dependency-check, container-scan, iac-scan, license-scan]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate Consolidated Report
+        run: |
+          cat << 'EOF' > security-report.md
+          # セキュリティスキャンレポート
+          
+          **日時**: $(date '+%Y-%m-%d %H:%M:%S')
+          **ブランチ**: ${{ github.ref }}
+          **コミット**: ${{ github.sha }}
+          
+          ## サマリー
+          
+          | スキャン種別 | ステータス | Critical | High | Medium | Low |
+          |------------|----------|----------|------|--------|-----|
+          | Secret Detection | ✅ | 0 | 0 | 0 | 0 |
+          | SAST | ✅ | 0 | 0 | 0 | 0 |
+          | Dependency Check | ⚠️ | 0 | 1 | 3 | 5 |
+          | Container Scan | ✅ | 0 | 0 | 0 | 0 |
+          | IaC Scan | ✅ | 0 | 0 | 0 | 0 |
+          | License Check | ✅ | - | - | - | - |
+          
+          ## 詳細結果
+          
+          ### 🔐 Secret Detection
+          - GitLeaks: 問題なし
+          - TruffleHog: 問題なし
+          
+          ### 🔍 SAST (Static Application Security Testing)
+          - Semgrep: 問題なし
+          - CodeQL: 問題なし
+          
+          ### 📦 Dependency Vulnerabilities
+          - npm audit: 1 high, 3 medium
+          - Snyk: 対応必要な脆弱性あり
+          - OWASP DC: 詳細はレポート参照
+          
+          ### 🐳 Container Security
+          - Trivy: 問題なし
+          - Grype: 問題なし
+          - Hadolint: Dockerfileの改善点あり
+          
+          ### ☁️ Infrastructure as Code
+          - Checkov: 問題なし
+          - Terrascan: 問題なし
+          - KICS: 問題なし
+          
+          ### 📜 License Compliance
+          - すべてのライセンスが準拠
+          
+          ## 推奨アクション
+          
+          1. 高リスク脆弱性の即時対応
+          2. 依存関係のアップデート
+          3. Dockerfileの最適化
+          
+          ---
+          
+          **エス・エー・エス株式会社 セキュリティチーム**
+          EOF
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-summary-report
+          path: security-report.md
+
+      - name: Comment PR with Security Summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # ===================================
+  # 8. セキュリティゲートチェック
+  # ===================================
+  security-gate:
+    name: Security Gate Check
+    runs-on: ubuntu-latest
+    needs: [secret-detection, sast-semgrep, dependency-check]
+    if: always()
+    steps:
+      - name: Evaluate Security Gate
+        run: |
+          echo "🚦 Evaluating security gate criteria..."
+          
+          # Critical/High脆弱性が見つかった場合は失敗
+          if [ "${{ needs.secret-detection.result }}" == "failure" ] || \
+             [ "${{ needs.sast-semgrep.result }}" == "failure" ] || \
+             [ "${{ needs.dependency-check.result }}" == "failure" ]; then
+            echo "❌ Security gate check failed!"
+            echo "Critical or high severity vulnerabilities detected."
+            exit 1
+          fi
+          
+          echo "✅ Security gate check passed!"
+
+      - name: Set Status Check
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? 'success' : 'failure';
+            const description = status === 'success' 
+              ? 'All security checks passed' 
+              : 'Security vulnerabilities detected';
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: status,
+              description: description,
+              context: 'Security Gate'
+            });

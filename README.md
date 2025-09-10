@@ -11,6 +11,24 @@
 
 ---
 
+## 🚀 SAS Flow - マイクロサービス向けブランチ戦略
+
+### 新しいブランチ戦略の導入
+エス・エー・エス株式会社では、マイクロサービス環境に最適化された新しいブランチ戦略「SAS Flow」を導入します。
+
+| ドキュメント | 対象者 | 概要 |
+|------------|--------|------|
+| **[SAS Flow実装仕様書](./SAS_FLOW_SPECIFICATION.md)** | 全開発者・アーキテクト | 技術仕様と設計原則 |
+| **[ブランチ管理ルール](./BRANCH_MANAGEMENT_RULES.md)** | 全開発者・リーダー | ブランチ命名規則・保護設定 |
+| **[CI/CDワークフロー設計](./CICD_WORKFLOW_DESIGN.md)** | DevOps・インフラ担当 | 自動化パイプライン設計 |
+| **[運用手順書](./SAS_FLOW_OPERATIONS_GUIDE.md)** | 全開発者・運用チーム | 日常業務・緊急対応手順 |
+| **[教育・導入計画](./SAS_FLOW_EDUCATION_PLAN.md)** | PM・人事・管理職 | チーム教育・段階的導入 |
+
+**導入開始**: 2025年9月10日〜（8週間の段階的移行）  
+**対象**: 全マイクロサービス開発チーム（20名）
+
+---
+
 ## 📚 対象者別ドキュメントガイド
 
 ### 🆕 新規参画者の方
@@ -19,7 +37,7 @@
 |------|------------|------|
 | 1 | **[GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)** | アカウント作成から2FA設定までの詳細手順 |
 | 2 | **[新規参画者向けオンボーディング](./ONBOARDING.md)** | 環境構築から開発開始までの手順（WSL2対応） |
-| 3 | **[詳細版 GitHub運用ガイドライン](./GUIDELINES_DETAIL.md)** | GitHub利用に関する詳細な規約と手順 |
+| 3 | **[統合ガイドライン](./MASTER_GITHUB_GUIDELINES.md)** 🆕 | GitHub運用の全体像（10セクション構成） |
 | 4 | **[クイックリファレンス](./QUICK_REFERENCE.md)** | よく使うコマンドと操作の簡易マニュアル |
 | 5 | **[緊急時対応マニュアル](./EMERGENCY_RESPONSE.md)** | インシデント発生時の対応手順 |
 
@@ -28,17 +46,18 @@
 | 優先度 | ドキュメント | 説明 |
 |--------|------------|------|
 | 高 | **[クイックリファレンス](./QUICK_REFERENCE.md)** | よく使うコマンドと操作の簡易マニュアル（日常業務で活用） |
-| 中 | **[詳細版 GitHub運用ガイドライン](./GUIDELINES_DETAIL.md)** | GitHub利用に関する詳細な規約と手順（必要時に参照） |
+| 高 | **[開発チーム向けガイド](./TEAM_CUSTOMIZATION_DEV.md)** 🆕 | 開発者専用のワークフローと自動化 |
+| 中 | **[統合ガイドライン](./MASTER_GITHUB_GUIDELINES.md)** 🆕 | GitHub運用の包括的ガイド（必要時に参照） |
 | 中 | **[緊急時対応マニュアル](./EMERGENCY_RESPONSE.md)** | インシデント発生時の対応手順 |
 
 ### 📋 PM・テックリードの方
 
 | 優先度 | ドキュメント | 説明 |
 |--------|------------|------|
-| 高 | **[詳細版 GitHub運用ガイドライン](./GUIDELINES_DETAIL.md)** | GitHub利用に関する詳細な規約と手順（全体管理のため） |
-| 高 | **[プロジェクト別ガイドライン作成マニュアル](./PROJECT_GUIDELINE_TEMPLATE.md)** | 各プロジェクト固有ガイドラインの作成手順 |
-| 高 | **[緊急時対応マニュアル](./EMERGENCY_RESPONSE.md)** | インシデント発生時の対応手順（管理責任） |
-| 中 | **[新規参画者向けオンボーディング](./ONBOARDING.md)** | メンバー受け入れ準備のための参考資料 |
+| 高 | **[統合ガイドライン](./MASTER_GITHUB_GUIDELINES.md)** 🆕 | GitHub運用の包括的ガイド（全体管理） |
+| 高 | **[Issue/Project管理ガイド](./ISSUE_PROJECT_MANAGEMENT_GUIDE.md)** 🆕 | Issue管理とProject Board運用 |
+| 高 | **[実装サマリー](./IMPLEMENTATION_SUMMARY.md)** 🆕 | 統合システムの全体像とROI分析 |
+| 中 | **[プロジェクト別ガイドライン作成マニュアル](./PROJECT_GUIDELINE_TEMPLATE.md)** | 各プロジェクト固有ガイドラインの作成手順 |
 
 ### 🤝 クライアント様
 
@@ -170,17 +189,38 @@ hotfix/[説明]     # 緊急修正
 ## 📊 ドキュメント構成
 
 ### 全社共通ガイドライン（このリポジトリ）
-```
-github-guidelines/
-├── README.md                    # このファイル（サマリー）
-├── GUIDELINES_DETAIL.md         # 詳細版運用ガイドライン
-├── QUICK_REFERENCE.md           # クイックリファレンス
-├── EMERGENCY_RESPONSE.md        # 緊急時対応マニュアル
-├── GITHUB_ACCOUNT_SETUP.md     # GitHubアカウント作成・設定ガイド
-├── ONBOARDING.md               # 新規参画者向けオンボーディング
-├── CLIENT_GUIDE.md             # クライアント様向けガイド
-└── PROJECT_GUIDELINE_TEMPLATE.md # プロジェクト別ガイドライン作成マニュアル
-```
+
+#### 📖 基本ドキュメント
+- **[README.md](./README.md)** - このファイル（全体サマリー）
+- **[MASTER_GITHUB_GUIDELINES.md](./MASTER_GITHUB_GUIDELINES.md)** 🆕 - 統合ガイドライン（単一情報源）
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** 🆕 - 実装成果・ROI分析
+
+#### 🚀 運用・ワークフロー
+- **[BRANCH_MANAGEMENT_RULES.md](./BRANCH_MANAGEMENT_RULES.md)** - ブランチ管理
+- **[COMMIT_CONVENTION_GUIDE.md](./COMMIT_CONVENTION_GUIDE.md)** - コミット規約
+- **[PR_REVIEW_GUIDELINES.md](./PR_REVIEW_GUIDELINES.md)** - PRレビューガイド
+- **[ISSUE_PROJECT_MANAGEMENT_GUIDE.md](./ISSUE_PROJECT_MANAGEMENT_GUIDE.md)** 🆕 - Issue/Project管理
+
+#### 🛡️ セキュリティ・品質
+- **[GITHUB_SECURITY_BEST_PRACTICES.md](./GITHUB_SECURITY_BEST_PRACTICES.md)** - セキュリティベストプラクティス
+- **[SECRETS_MANAGEMENT_GUIDE.md](./SECRETS_MANAGEMENT_GUIDE.md)** - シークレット管理
+- **[TEST_STRATEGY.md](./TEST_STRATEGY.md)** - テスト戦略
+
+#### 🔧 CI/CD・デプロイメント
+- **[CICD_WORKFLOW_DESIGN.md](./CICD_WORKFLOW_DESIGN.md)** - CI/CDワークフロー設計
+- **[CICD_DEPLOYMENT_STRATEGY.md](./CICD_DEPLOYMENT_STRATEGY.md)** - デプロイメント戦略
+- **[ENVIRONMENT_DEPLOYMENT_STRATEGY.md](./ENVIRONMENT_DEPLOYMENT_STRATEGY.md)** - 環境別デプロイ
+
+#### 👥 チーム別カスタマイズ
+- **[TEAM_CUSTOMIZATION_DEV.md](./TEAM_CUSTOMIZATION_DEV.md)** 🆕 - 開発チーム向け
+- **[TEAM_CUSTOMIZATION_INFRA.md](./TEAM_CUSTOMIZATION_INFRA.md)** 🆕 - インフラチーム向け
+- **[TEAM_CUSTOMIZATION_SECURITY.md](./TEAM_CUSTOMIZATION_SECURITY.md)** 🆕 - セキュリティチーム向け
+
+#### 🤖 自動化・ツール
+- **scripts/** - 自動化スクリプト群
+  - github-automation/ - GitHub設定自動化
+  - migration/ - 移行チェックリスト
+- **ml_pipeline/** 🆕 - 違反検出MLシステム
 
 ### 各プロジェクトリポジトリで作成すべきドキュメント
 ```
@@ -212,6 +252,7 @@ github-guidelines/
 
 | バージョン | 日付 | 変更内容 | 承認者 |
 |-----------|------|---------|--------|
+| 1.1.0 | 2025-09-11 | 統合ガイドライン・自動化ツール追加 | 管理責任者 |
 | 1.0.0 | 2025-09-05 | 初版作成 | 管理責任者 |
 
 ---

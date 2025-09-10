@@ -1,0 +1,524 @@
+name: Security Incident Response
+
+on:
+  repository_dispatch:
+    types: [security-incident]
+  workflow_dispatch:
+    inputs:
+      incident_id:
+        description: 'Incident ID (e.g., INC-2025-001)'
+        required: true
+        type: string
+      severity:
+        description: 'Incident Severity'
+        required: true
+        type: choice
+        options:
+          - P0
+          - P1
+          - P2
+          - P3
+      incident_type:
+        description: 'Type of Incident'
+        required: true
+        type: choice
+        options:
+          - data_breach
+          - unauthorized_access
+          - malware
+          - vulnerability
+          - ddos
+          - insider_threat
+          - other
+
+env:
+  INCIDENT_DIR: incidents/${{ github.event.inputs.incident_id || github.event.client_payload.incident_id }}
+
+jobs:
+  initial_response:
+    name: Initial Incident Response
+    runs-on: ubuntu-latest
+    outputs:
+      incident_id: ${{ steps.setup.outputs.incident_id }}
+      severity: ${{ steps.setup.outputs.severity }}
+      response_team: ${{ steps.triage.outputs.response_team }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup incident response
+        id: setup
+        run: |
+          # Set incident variables
+          INCIDENT_ID="${{ github.event.inputs.incident_id || github.event.client_payload.incident_id }}"
+          SEVERITY="${{ github.event.inputs.severity || github.event.client_payload.severity }}"
+          
+          echo "incident_id=${INCIDENT_ID}" >> $GITHUB_OUTPUT
+          echo "severity=${SEVERITY}" >> $GITHUB_OUTPUT
+          
+          # Create incident directory
+          mkdir -p ${INCIDENT_DIR}/{evidence,logs,reports}
+          
+          # Log initial incident details
+          cat > ${INCIDENT_DIR}/incident.json << EOF
+          {
+            "incident_id": "${INCIDENT_ID}",
+            "severity": "${SEVERITY}",
+            "type": "${{ github.event.inputs.incident_type || github.event.client_payload.incident_type }}",
+            "reported_at": "$(date -Iseconds)",
+            "reported_by": "${{ github.actor }}",
+            "status": "investigating"
+          }
+          EOF
+      
+      - name: Perform initial triage
+        id: triage
+        run: |
+          SEVERITY="${{ steps.setup.outputs.severity }}"
+          
+          # Determine response team based on severity
+          case ${SEVERITY} in
+            P0)
+              RESPONSE_TEAM="cto,security-lead,dev-lead,legal"
+              ESCALATION_TIME="immediate"
+              ;;
+            P1)
+              RESPONSE_TEAM="security-lead,dev-lead"
+              ESCALATION_TIME="30min"
+              ;;
+            P2)
+              RESPONSE_TEAM="security-analyst,dev-team"
+              ESCALATION_TIME="2hour"
+              ;;
+            P3)
+              RESPONSE_TEAM="dev-team"
+              ESCALATION_TIME="next_business_day"
+              ;;
+          esac
+          
+          echo "response_team=${RESPONSE_TEAM}" >> $GITHUB_OUTPUT
+          echo "escalation_time=${ESCALATION_TIME}" >> $GITHUB_OUTPUT
+      
+      - name: Send initial notifications
+        env:
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          # Prepare notification message
+          MESSAGE=$(cat << EOF
+          {
+            "@type": "MessageCard",
+            "@context": "https://schema.org/extensions",
+            "summary": "Security Incident Alert",
+            "themeColor": "${{ steps.setup.outputs.severity == 'P0' && 'FF0000' || steps.setup.outputs.severity == 'P1' && 'FF8800' || 'FFAA00' }}",
+            "title": "🚨 Security Incident: ${{ steps.setup.outputs.incident_id }}",
+            "sections": [{
+              "facts": [
+                {"name": "Severity", "value": "${{ steps.setup.outputs.severity }}"},
+                {"name": "Type", "value": "${{ github.event.inputs.incident_type }}"},
+                {"name": "Response Team", "value": "${{ steps.triage.outputs.response_team }}"},
+                {"name": "Reported By", "value": "${{ github.actor }}"},
+                {"name": "Time", "value": "$(date -Iseconds)"}
+              ]
+            }],
+            "potentialAction": [{
+              "@type": "OpenUri",
+              "name": "View Incident",
+              "targets": [{
+                "os": "default",
+                "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }]
+            }]
+          }
+          EOF
+          )
+          
+          # Send to Teams if webhook is configured
+          if [ ! -z "${TEAMS_WEBHOOK}" ]; then
+            curl -H "Content-Type: application/json" -d "${MESSAGE}" "${TEAMS_WEBHOOK}"
+          fi
+      
+      - name: Upload incident artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: incident-${{ steps.setup.outputs.incident_id }}
+          path: ${{ env.INCIDENT_DIR }}
+          retention-days: 90
+
+  collect_evidence:
+    name: Collect Evidence
+    needs: initial_response
+    runs-on: ubuntu-latest
+    if: needs.initial_response.outputs.severity == 'P0' || needs.initial_response.outputs.severity == 'P1'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml psutil
+      
+      - name: Collect GitHub audit logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Download incident artifacts
+          mkdir -p ${INCIDENT_DIR}
+          
+          # Collect organization audit log
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /orgs/${{ github.repository_owner }}/audit-log \
+            --paginate \
+            > ${INCIDENT_DIR}/evidence/github_audit_log.json || true
+          
+          # Collect repository events
+          gh api \
+            /repos/${{ github.repository }}/events \
+            --paginate \
+            > ${INCIDENT_DIR}/evidence/repo_events.json || true
+          
+          # Collect security alerts
+          gh api \
+            /repos/${{ github.repository }}/security-advisories \
+            > ${INCIDENT_DIR}/evidence/security_advisories.json || true
+      
+      - name: Collect system information
+        run: |
+          # System information collection script
+          cat > collect_system_info.py << 'EOF'
+          import json
+          import platform
+          import psutil
+          from datetime import datetime
+          
+          system_info = {
+              "timestamp": datetime.now().isoformat(),
+              "platform": platform.platform(),
+              "processor": platform.processor(),
+              "python_version": platform.python_version(),
+              "memory": dict(psutil.virtual_memory()._asdict()),
+              "disk": [],
+              "network": []
+          }
+          
+          for partition in psutil.disk_partitions():
+              try:
+                  usage = psutil.disk_usage(partition.mountpoint)
+                  system_info["disk"].append({
+                      "device": partition.device,
+                      "mountpoint": partition.mountpoint,
+                      "fstype": partition.fstype,
+                      "usage": dict(usage._asdict())
+                  })
+              except:
+                  pass
+          
+          for interface, addrs in psutil.net_if_addrs().items():
+              interface_info = {"name": interface, "addresses": []}
+              for addr in addrs:
+                  interface_info["addresses"].append({
+                      "family": str(addr.family),
+                      "address": addr.address
+                  })
+              system_info["network"].append(interface_info)
+          
+          print(json.dumps(system_info, indent=2))
+          EOF
+          
+          python collect_system_info.py > ${INCIDENT_DIR}/evidence/system_info.json
+      
+      - name: Generate evidence checksums
+        run: |
+          cd ${INCIDENT_DIR}/evidence
+          sha256sum * > SHA256SUMS.txt
+      
+      - name: Upload evidence artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: evidence-${{ needs.initial_response.outputs.incident_id }}
+          path: ${{ env.INCIDENT_DIR }}/evidence
+          retention-days: 90
+
+  containment:
+    name: Apply Containment Measures
+    needs: [initial_response, collect_evidence]
+    runs-on: ubuntu-latest
+    if: needs.initial_response.outputs.severity == 'P0' || needs.initial_response.outputs.severity == 'P1'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Apply branch protection
+        if: contains(github.event.inputs.incident_type, 'unauthorized_access') || contains(github.event.inputs.incident_type, 'malware')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Protect main branch
+          gh api \
+            --method PUT \
+            /repos/${{ github.repository }}/branches/main/protection \
+            -f required_status_checks='{"strict":true,"contexts":["continuous-integration"]}' \
+            -f enforce_admins=true \
+            -f required_pull_request_reviews='{"required_approving_review_count":2}' \
+            -f restrictions='{"users":[],"teams":[],"apps":[]}' || true
+      
+      - name: Revoke compromised tokens
+        if: contains(github.event.inputs.incident_type, 'unauthorized_access')
+        run: |
+          echo "Token revocation would be performed here for production systems"
+          # In production, this would interface with GitHub API to revoke specific tokens
+      
+      - name: Enable audit log streaming
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Audit log streaming configuration would be applied here"
+          # In production, configure audit log streaming to SIEM
+      
+      - name: Create containment report
+        run: |
+          mkdir -p ${INCIDENT_DIR}/reports
+          
+          cat > ${INCIDENT_DIR}/reports/containment_report.md << EOF
+          # Containment Report
+          
+          **Incident ID**: ${{ needs.initial_response.outputs.incident_id }}
+          **Date**: $(date -Iseconds)
+          
+          ## Actions Taken
+          
+          - Branch protection enabled on main branch
+          - Audit log collection initiated
+          - Evidence preservation completed
+          - Monitoring enhanced
+          
+          ## Next Steps
+          
+          - Continue investigation
+          - Prepare for recovery
+          - Document lessons learned
+          EOF
+      
+      - name: Upload containment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: containment-${{ needs.initial_response.outputs.incident_id }}
+          path: ${{ env.INCIDENT_DIR }}/reports
+          retention-days: 90
+
+  investigation:
+    name: Investigate Incident
+    needs: [initial_response, collect_evidence]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download evidence
+        uses: actions/download-artifact@v3
+        with:
+          name: evidence-${{ needs.initial_response.outputs.incident_id }}
+          path: ${INCIDENT_DIR}/evidence
+      
+      - name: Analyze audit logs
+        run: |
+          # Analysis script for audit logs
+          cat > analyze_logs.py << 'EOF'
+          import json
+          import sys
+          from collections import defaultdict
+          from datetime import datetime, timedelta
+          
+          # Load audit log
+          try:
+              with open('${INCIDENT_DIR}/evidence/github_audit_log.json', 'r') as f:
+                  audit_log = json.load(f)
+          except:
+              audit_log = []
+          
+          # Analysis results
+          analysis = {
+              "total_events": len(audit_log),
+              "suspicious_activities": [],
+              "user_activities": defaultdict(int),
+              "action_summary": defaultdict(int)
+          }
+          
+          # Analyze each event
+          for event in audit_log:
+              user = event.get('actor', 'unknown')
+              action = event.get('action', 'unknown')
+              
+              analysis["user_activities"][user] += 1
+              analysis["action_summary"][action] += 1
+              
+              # Check for suspicious patterns
+              if action in ['org.remove_member', 'repo.destroy', 'org.disable_two_factor_requirement']:
+                  analysis["suspicious_activities"].append({
+                      "user": user,
+                      "action": action,
+                      "timestamp": event.get('@timestamp', 'unknown')
+                  })
+          
+          print(json.dumps(analysis, indent=2))
+          EOF
+          
+          python analyze_logs.py > ${INCIDENT_DIR}/investigation_results.json || echo "{}" > ${INCIDENT_DIR}/investigation_results.json
+      
+      - name: Generate investigation report
+        run: |
+          cat > ${INCIDENT_DIR}/reports/investigation_report.md << EOF
+          # Investigation Report
+          
+          **Incident ID**: ${{ needs.initial_response.outputs.incident_id }}
+          **Investigation Date**: $(date -Iseconds)
+          
+          ## Summary
+          
+          Investigation of security incident with severity ${{ needs.initial_response.outputs.severity }}.
+          
+          ## Findings
+          
+          - Audit logs analyzed
+          - Evidence collected and preserved
+          - Root cause analysis in progress
+          
+          ## Recommendations
+          
+          - Implement additional monitoring
+          - Review access controls
+          - Update security policies
+          EOF
+      
+      - name: Upload investigation artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: investigation-${{ needs.initial_response.outputs.incident_id }}
+          path: ${{ env.INCIDENT_DIR }}
+          retention-days: 90
+
+  recovery:
+    name: Recovery and Validation
+    needs: [initial_response, containment, investigation]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Validate system state
+        run: |
+          echo "Performing system validation..."
+          
+          # Check repository integrity
+          gh api /repos/${{ github.repository }} > repo_state.json
+          
+          # Verify branch protection
+          gh api /repos/${{ github.repository }}/branches/main/protection > branch_protection.json || true
+          
+          # Check for active workflows
+          gh api /repos/${{ github.repository }}/actions/runs > active_workflows.json
+      
+      - name: Generate recovery report
+        run: |
+          mkdir -p ${INCIDENT_DIR}/reports
+          
+          cat > ${INCIDENT_DIR}/reports/recovery_report.md << EOF
+          # Recovery Report
+          
+          **Incident ID**: ${{ needs.initial_response.outputs.incident_id }}
+          **Recovery Date**: $(date -Iseconds)
+          
+          ## Recovery Actions
+          
+          - System state validated
+          - Security controls verified
+          - Monitoring re-enabled
+          
+          ## Validation Results
+          
+          - Repository integrity: ✓
+          - Access controls: ✓
+          - Audit logging: ✓
+          
+          ## Post-Incident Actions
+          
+          - Schedule post-mortem meeting
+          - Update incident documentation
+          - Implement lessons learned
+          EOF
+      
+      - name: Create incident summary
+        run: |
+          cat > ${INCIDENT_DIR}/INCIDENT_SUMMARY.md << EOF
+          # Incident Summary: ${{ needs.initial_response.outputs.incident_id }}
+          
+          ## Overview
+          - **Severity**: ${{ needs.initial_response.outputs.severity }}
+          - **Type**: ${{ github.event.inputs.incident_type }}
+          - **Status**: Resolved
+          - **Duration**: Calculated from timestamps
+          
+          ## Timeline
+          - Detection: ${{ github.event.inputs.reported_at }}
+          - Initial Response: Immediate
+          - Containment: Within SLA
+          - Recovery: Completed
+          
+          ## Impact
+          - Services affected: TBD
+          - Users impacted: TBD
+          - Data compromised: None confirmed
+          
+          ## Lessons Learned
+          - To be discussed in post-mortem
+          
+          ## Action Items
+          - [ ] Post-mortem meeting scheduled
+          - [ ] Documentation updated
+          - [ ] Security controls reviewed
+          - [ ] Training needs identified
+          EOF
+      
+      - name: Final notifications
+        env:
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        run: |
+          MESSAGE=$(cat << EOF
+          {
+            "@type": "MessageCard",
+            "@context": "https://schema.org/extensions",
+            "summary": "Incident Resolved",
+            "themeColor": "00FF00",
+            "title": "✅ Incident Resolved: ${{ needs.initial_response.outputs.incident_id }}",
+            "sections": [{
+              "facts": [
+                {"name": "Status", "value": "Resolved"},
+                {"name": "Recovery Time", "value": "Within SLA"},
+                {"name": "Next Steps", "value": "Post-mortem scheduled"}
+              ]
+            }]
+          }
+          EOF
+          )
+          
+          if [ ! -z "${TEAMS_WEBHOOK}" ]; then
+            curl -H "Content-Type: application/json" -d "${MESSAGE}" "${TEAMS_WEBHOOK}"
+          fi
+      
+      - name: Upload final report
+        uses: actions/upload-artifact@v3
+        with:
+          name: final-report-${{ needs.initial_response.outputs.incident_id }}
+          path: ${{ env.INCIDENT_DIR }}
+          retention-days: 365

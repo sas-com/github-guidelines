@@ -1,0 +1,301 @@
+# Dependabot configuration for automated dependency updates
+# エス・エー・エス株式会社 - セキュリティ自動更新設定
+
+version: 2
+
+updates:
+  # ===== JavaScript/Node.js Dependencies =====
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    # Security updates get priority
+    priority: 1
+    reviewers:
+      - "security-team"
+      - "dev-team"
+    assignees:
+      - "security-team"
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "security"
+      - "automated"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    # Grouping related updates
+    groups:
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "eslint*"
+          - "@types/*"
+          - "jest*"
+      dev-dependencies:
+        patterns:
+          - "eslint*"
+          - "@types/*"
+          - "jest*"
+          - "prettier*"
+    # Version update strategy
+    versioning-strategy: increase
+    # Security updates only for production deps
+    allow:
+      - dependency-type: "production"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
+      - dependency-type: "development"
+        update-types: ["version-update:semver-minor"]
+    ignore:
+      # Ignore specific problematic updates
+      - dependency-name: "webpack"
+        versions: ["5.x"]
+        reason: "Breaking changes in v5"
+
+  # ===== Python Dependencies =====
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    priority: 1
+    reviewers:
+      - "security-team"
+      - "python-team"
+    labels:
+      - "dependencies"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "deps(python)"
+      include: "scope"
+    # Focus on security updates
+    allow:
+      - dependency-type: "all"
+    # Group Python updates
+    groups:
+      python-security:
+        patterns:
+          - "django*"
+          - "flask*"
+          - "requests*"
+          - "urllib3*"
+      python-testing:
+        patterns:
+          - "pytest*"
+          - "coverage*"
+          - "mock*"
+
+  # ===== Go Dependencies =====
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "go-team"
+    labels:
+      - "dependencies"
+      - "golang"
+      - "security"
+    commit-message:
+      prefix: "deps(go)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  # ===== Java/Maven Dependencies =====
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "java-team"
+    labels:
+      - "dependencies"
+      - "java"
+      - "security"
+    commit-message:
+      prefix: "deps(java)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignore major version updates for critical dependencies
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
+
+  # ===== Ruby/Bundler Dependencies =====
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "ruby-team"
+    labels:
+      - "dependencies"
+      - "ruby"
+      - "security"
+    commit-message:
+      prefix: "deps(ruby)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+
+  # ===== Docker Dependencies =====
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "devops-team"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+      - "infrastructure"
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"
+    # Only update base images for security patches
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Don't auto-update major versions of base images
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major"]
+
+  # ===== GitHub Actions =====
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "devops-team"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci-cd"
+    commit-message:
+      prefix: "ci(actions)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # ===== Terraform Dependencies =====
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "infrastructure-team"
+    labels:
+      - "dependencies"
+      - "terraform"
+      - "infrastructure"
+      - "security"
+    commit-message:
+      prefix: "deps(terraform)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+
+  # ===== Composer (PHP) Dependencies =====
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "php-team"
+    labels:
+      - "dependencies"
+      - "php"
+      - "security"
+    commit-message:
+      prefix: "deps(php)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+
+  # ===== NuGet (.NET) Dependencies =====
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "security-team"
+      - "dotnet-team"
+    labels:
+      - "dependencies"
+      - "dotnet"
+      - "security"
+    commit-message:
+      prefix: "deps(dotnet)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+
+# Configuration Notes:
+# - Daily updates for critical ecosystems (npm)
+# - Weekly updates for other ecosystems to balance security and stability
+# - All updates scheduled during JST business hours
+# - Security team is included as reviewer for all updates
+# - Grouped updates to reduce PR noise
+# - Conservative version update strategy (prefer minor/patch over major)
+# - Specific ignore rules for known problematic updates
+# - Separate dev and production dependency handling where applicable

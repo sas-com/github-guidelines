@@ -1,0 +1,424 @@
+# Node.js CI/CDワークフローテンプレート
+# エス・エー・エス株式会社
+# バージョン: 1.0.0
+
+name: Node.js CI/CD Pipeline
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+      - 'release/*'
+      - 'hotfix/*'
+  pull_request:
+    branches: 
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+# Concurrency制御: 同じブランチでの実行を制限
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# デフォルト権限を最小限に設定
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: '18.x'
+  REGISTRY_URL: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 基本的な検証・テスト
+  test:
+    name: Test and Quality Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+        os: [ubuntu-latest]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0  # SonarQube等での履歴分析に必要
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4.0.2
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          # セキュリティ監査を実行
+          npm audit --audit-level=high
+      
+      - name: Run linting
+        run: |
+          npm run lint
+          npm run lint:check || echo "::warning::Linting issues found"
+      
+      - name: Run type checking
+        if: hashFiles('tsconfig.json') != ''
+        run: npm run type-check
+      
+      - name: Run unit tests
+        run: |
+          npm run test:unit -- --coverage --verbose
+          # テストカバレッジをアーティファクトとして保存
+          mkdir -p coverage-reports
+          cp -r coverage/* coverage-reports/ || true
+        env:
+          CI: true
+          NODE_ENV: test
+      
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+      
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4.3.1
+        if: matrix.node-version == '18.x'
+        with:
+          name: coverage-reports
+          path: coverage-reports/
+          retention-days: 30
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4.3.1
+        if: always()
+        with:
+          name: test-results-${{ matrix.node-version }}
+          path: |
+            test-results.xml
+            junit.xml
+          retention-days: 5
+
+  # セキュリティスキャン
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Run security audit
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
+          cat audit-results.json
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+      
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3.24.5
+        if: hashFiles('snyk.sarif') != ''
+        with:
+          sarif_file: snyk.sarif
+
+  # ビルド・アーティファクト作成
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test, security]
+    if: always() && (needs.test.result == 'success' && needs.security.result != 'failure')
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Build application
+        run: |
+          npm run build
+          # ビルド成果物のサイズを確認
+          du -sh dist/ || du -sh build/
+        env:
+          NODE_ENV: production
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            build/
+            !dist/**/*.map
+          retention-days: 30
+      
+      # Dockerイメージのビルド
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.2.0
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ${{ env.REGISTRY_URL }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ env.REGISTRY_URL }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          sbom: true
+          provenance: true
+
+  # Dev環境へのデプロイ
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    if: github.ref == 'refs/heads/develop' || github.event.inputs.environment == 'dev'
+    
+    environment:
+      name: development
+      url: https://dev.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Deploy to Development
+        run: |
+          echo "Deploying to Development environment"
+          echo "Image: ${{ needs.build.outputs.image-tag }}"
+          # 実際のデプロイコマンドをここに記述
+          # kubectl apply -f k8s/dev/
+          # helm upgrade --install app ./helm-chart --values values-dev.yaml
+        env:
+          DEPLOY_TARGET: development
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
+      
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against dev environment"
+          # curl -f https://dev.example.com/health || exit 1
+          # npm run test:smoke -- --env=dev
+      
+      - name: Notify deployment
+        if: always()
+        uses: 8398a7/action-slack@v3.16.2
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          text: 'Dev deployment ${{ job.status }}: ${{ needs.build.outputs.image-tag }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Staging環境へのデプロイ（main/release ブランチ）
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    if: |
+      (github.ref == 'refs/heads/main' || 
+       startsWith(github.ref, 'refs/heads/release/') ||
+       github.event.inputs.environment == 'staging')
+    
+    environment:
+      name: staging
+      url: https://staging.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to Staging environment"
+          echo "Image: ${{ needs.build.outputs.image-tag }}"
+          # 実際のデプロイコマンド
+        env:
+          DEPLOY_TARGET: staging
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
+      
+      - name: Run E2E tests
+        run: |
+          echo "Running E2E tests against staging environment"
+          # npm run test:e2e -- --env=staging
+          # playwright test --config=playwright.staging.config.js
+      
+      - name: Performance tests
+        run: |
+          echo "Running performance tests"
+          # k6 run performance-tests.js
+
+  # Production環境へのデプロイ（手動承認必須）
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, deploy-staging]
+    if: |
+      (github.ref == 'refs/heads/main' &&
+       needs.deploy-staging.result == 'success') ||
+      github.event.inputs.environment == 'production'
+    
+    environment:
+      name: production
+      url: https://app.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Pre-deployment check
+        run: |
+          echo "Running pre-deployment checks"
+          # 本番環境の準備状況確認
+          # データベースマイグレーションの確認等
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to Production environment"
+          echo "Image: ${{ needs.build.outputs.image-tag }}"
+          # ブルー・グリーンデプロイメントまたはカナリアデプロイメント
+        env:
+          DEPLOY_TARGET: production
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
+      
+      - name: Post-deployment verification
+        run: |
+          echo "Running post-deployment verification"
+          # curl -f https://app.example.com/health
+          # 重要な機能の動作確認
+      
+      - name: Notify production deployment
+        if: always()
+        uses: 8398a7/action-slack@v3.16.2
+        with:
+          status: ${{ job.status }}
+          channel: '#production'
+          text: |
+            🚀 Production deployment ${{ job.status }}
+            Image: ${{ needs.build.outputs.image-tag }}
+            Deployed by: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # クリーンアップ・通知
+  cleanup:
+    name: Cleanup and Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, security, build, deploy-dev, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Cleanup old artifacts
+        run: |
+          echo "Cleaning up old build artifacts"
+          # 古いアーティファクトの削除ロジック
+      
+      - name: Generate deployment report
+        run: |
+          echo "Generating deployment report"
+          echo "Test: ${{ needs.test.result }}"
+          echo "Security: ${{ needs.security.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Deploy Dev: ${{ needs.deploy-dev.result }}"
+          echo "Deploy Staging: ${{ needs.deploy-staging.result }}"
+          echo "Deploy Production: ${{ needs.deploy-production.result }}"
+      
+      - name: Update deployment status
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Updating deployment dashboard"
+          # デプロイメント状況の更新

@@ -1,0 +1,153 @@
+# Development Environment Configuration
+# GitHub Environment Protection Rules
+
+name: development
+description: Development environment for feature development and testing
+
+# Environment Protection Rules
+protection_rules:
+  # No approval required for development
+  required_reviewers: 0
+  
+  # No wait timer - deploy immediately
+  wait_timer: 0
+  
+  # Allow all users with write access to deploy
+  prevent_self_review: false
+
+# Deployment Branch Policy
+deployment_branch_policy:
+  # Allow deployment from multiple branches
+  protected_branches: false
+  custom_branch_policies: true
+  custom_branches:
+    - "dev"
+    - "feature/*"
+    - "bugfix/*"
+    - "hotfix/*"
+
+# Environment Variables
+environment_variables:
+  NODE_ENV: development
+  LOG_LEVEL: debug
+  ENVIRONMENT: development
+  DEBUG_MODE: "true"
+  CACHE_TTL: "300"
+  API_TIMEOUT: "30000"
+
+# Environment Secrets (configured in GitHub UI)
+# These are placeholder names - actual values set in GitHub
+required_secrets:
+  # Database Configuration
+  - DEV_DATABASE_URL
+  - DEV_DATABASE_PASSWORD
+  
+  # API Keys
+  - DEV_API_KEY
+  - DEV_SERVICE_ACCOUNT_KEY
+  
+  # External Services
+  - DEV_REDIS_URL
+  - DEV_ELASTICSEARCH_URL
+  
+  # Monitoring
+  - DEV_MONITORING_TOKEN
+  - DEV_LOGGING_TOKEN
+  
+  # Testing
+  - DEV_TEST_USER_TOKEN
+  - CODECOV_TOKEN
+  
+  # Security Scanning
+  - SNYK_TOKEN
+  - SEMGREP_APP_TOKEN
+
+# Deployment Configuration
+deployment:
+  strategy: recreate
+  timeout_minutes: 15
+  
+  # Health Check Configuration
+  health_check:
+    path: "/health"
+    timeout: 30
+    retries: 5
+    interval: 10
+  
+  # Resource Limits
+  resources:
+    cpu: 0.5
+    memory: 1024Mi
+    storage: 10Gi
+  
+  # Auto-scaling
+  scaling:
+    min_replicas: 1
+    max_replicas: 2
+    target_cpu: 70
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  retention_days: 7
+  log_level: debug
+  
+  # Alerts (relaxed for development)
+  alerts:
+    error_rate_threshold: 10.0
+    response_time_threshold: 5000
+    availability_threshold: 90.0
+  
+  # Metrics Collection
+  metrics:
+    - response_time
+    - error_rate
+    - throughput
+    - cpu_usage
+    - memory_usage
+
+# Security Configuration
+security:
+  # Relaxed security for development
+  vulnerability_scan: true
+  license_check: false
+  secret_detection: true
+  
+  # Container Security
+  container_scan: true
+  base_image_scan: false
+  
+  # Network Security
+  network_policies: false
+  ingress_whitelist: []
+
+# Backup Configuration
+backup:
+  enabled: false
+  retention_days: 3
+  schedule: "0 2 * * *"  # Daily at 2 AM
+
+# Cleanup Configuration
+cleanup:
+  # Automatic cleanup of old deployments
+  auto_cleanup: true
+  keep_last_deployments: 3
+  cleanup_schedule: "0 0 * * 0"  # Weekly
+
+# Notification Configuration
+notifications:
+  enabled: true
+  channels:
+    - teams_dev_channel
+  
+  # Events to notify
+  events:
+    - deployment_success
+    - deployment_failure
+    - health_check_failure
+  
+  # Notification preferences
+  preferences:
+    immediate: false
+    batched: true
+    quiet_hours: true

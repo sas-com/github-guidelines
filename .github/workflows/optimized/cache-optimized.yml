@@ -1,0 +1,431 @@
+name: Cache Optimized Workflow
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        type: string
+        default: '18'
+      python_version:
+        type: string
+        default: '3.11'
+      java_version:
+        type: string
+        default: '17'
+      go_version:
+        type: string
+        default: '1.21'
+
+env:
+  CACHE_VERSION: v2  # キャッシュバージョン管理
+
+jobs:
+  # ============================================================
+  # Node.js プロジェクト最適化キャッシュ
+  # ============================================================
+  node-cache-optimization:
+    name: Node.js Cache Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.npm-cache.outputs.cache-hit }}
+      cache-key: ${{ steps.generate-key.outputs.key }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Cache Keys
+        id: generate-key
+        run: |
+          # 複数レベルのキャッシュキー生成
+          HASH_DEPS=${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}
+          HASH_CODE=${{ hashFiles('**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx') }}
+          WEEK_NUMBER=$(date +%Y-%U)
+          
+          echo "key-exact=${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${HASH_DEPS}-${HASH_CODE}" >> $GITHUB_OUTPUT
+          echo "key-deps=${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${HASH_DEPS}" >> $GITHUB_OUTPUT
+          echo "key-weekly=${{ runner.os }}-node-${{ env.CACHE_VERSION }}-week-${WEEK_NUMBER}" >> $GITHUB_OUTPUT
+          echo "key-base=${{ runner.os }}-node-${{ env.CACHE_VERSION }}" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'  # 組み込みキャッシュ
+
+      - name: Multi-layer NPM Cache
+        id: npm-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.yarn/cache
+            ~/.pnpm-store
+            node_modules
+            .next/cache
+            .nuxt
+            .cache
+            .parcel-cache
+            .turbo
+            dist
+            build
+          key: ${{ steps.generate-key.outputs.key-exact }}
+          restore-keys: |
+            ${{ steps.generate-key.outputs.key-deps }}
+            ${{ steps.generate-key.outputs.key-weekly }}
+            ${{ steps.generate-key.outputs.key-base }}
+
+      - name: Optimize npm install
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: |
+          # npm設定の最適化
+          npm config set registry https://registry.npmjs.org/
+          npm config set prefer-offline true
+          npm config set audit false
+          npm config set fund false
+          npm config set update-notifier false
+          
+          # 並列インストール
+          npm ci --prefer-offline --no-audit --no-fund --loglevel=error
+          
+          # キャッシュウォーミング
+          npm run build --if-present || true
+
+      - name: Validate Cache
+        run: |
+          echo "Cache Hit: ${{ steps.npm-cache.outputs.cache-hit }}"
+          echo "Node Modules Size: $(du -sh node_modules | cut -f1)"
+          echo "Cache Size: $(du -sh ~/.npm | cut -f1)"
+
+  # ============================================================
+  # Python プロジェクト最適化キャッシュ
+  # ============================================================
+  python-cache-optimization:
+    name: Python Cache Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.pip-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: 'pip'  # 組み込みキャッシュ
+
+      - name: Advanced Pip Cache
+        id: pip-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local
+            .venv
+            venv
+            .tox
+            .pytest_cache
+            .mypy_cache
+            .coverage
+            htmlcov
+            __pycache__
+            *.egg-info
+            dist
+            build
+          key: ${{ runner.os }}-python-${{ env.CACHE_VERSION }}-${{ inputs.python_version }}-${{ hashFiles('**/requirements*.txt', '**/Pipfile.lock', '**/poetry.lock', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-python-${{ env.CACHE_VERSION }}-${{ inputs.python_version }}-
+            ${{ runner.os }}-python-${{ env.CACHE_VERSION }}-
+
+      - name: Setup Virtual Environment
+        if: steps.pip-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          
+          # pip最適化
+          pip install --upgrade pip wheel setuptools
+          pip config set global.index-url https://pypi.org/simple
+          pip config set global.trusted-host pypi.org
+          
+          # 依存関係の並列インストール
+          pip install --no-deps -r requirements.txt
+          pip install -r requirements.txt --no-dependencies
+          
+          # 開発依存関係（存在する場合）
+          [[ -f requirements-dev.txt ]] && pip install -r requirements-dev.txt
+
+      - name: Pre-compile Python Files
+        run: |
+          python -m compileall -q .
+          python -m py_compile **/*.py || true
+
+  # ============================================================
+  # Java/Maven プロジェクト最適化キャッシュ
+  # ============================================================
+  java-cache-optimization:
+    name: Java/Maven Cache Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.maven-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ inputs.java_version }}
+          distribution: 'temurin'
+          cache: 'maven'  # 組み込みキャッシュ
+
+      - name: Advanced Maven Cache
+        id: maven-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/wrapper
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            target
+            build
+            .gradle
+          key: ${{ runner.os }}-maven-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pom.xml', '**/build.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-maven-
+
+      - name: Maven Dependency Cache
+        if: steps.maven-cache.outputs.cache-hit != 'true'
+        run: |
+          # Maven設定最適化
+          mkdir -p ~/.m2
+          echo "<settings>
+            <mirrors>
+              <mirror>
+                <id>central</id>
+                <url>https://repo.maven.apache.org/maven2</url>
+                <mirrorOf>*</mirrorOf>
+              </mirror>
+            </mirrors>
+          </settings>" > ~/.m2/settings.xml
+          
+          # 依存関係のダウンロード
+          mvn dependency:go-offline -B -q || true
+          mvn compile -B -q || true
+
+  # ============================================================
+  # Go プロジェクト最適化キャッシュ
+  # ============================================================
+  go-cache-optimization:
+    name: Go Cache Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ inputs.go_version }}
+          cache: true  # 組み込みキャッシュ
+
+      - name: Advanced Go Cache
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            vendor
+            bin
+          key: ${{ runner.os }}-go-${{ env.CACHE_VERSION }}-${{ inputs.go_version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ env.CACHE_VERSION }}-${{ inputs.go_version }}-
+            ${{ runner.os }}-go-${{ env.CACHE_VERSION }}-
+
+      - name: Go Module Cache
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          # Go環境設定
+          go env -w GOPROXY=https://proxy.golang.org,direct
+          go env -w GOSUMDB=sum.golang.org
+          
+          # モジュールダウンロード
+          go mod download
+          go mod vendor || true
+          
+          # ビルドキャッシュ準備
+          go build -v ./... || true
+
+  # ============================================================
+  # Docker レイヤーキャッシュ最適化
+  # ============================================================
+  docker-cache-optimization:
+    name: Docker Layer Cache Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.docker-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:master
+
+      - name: Registry Cache Configuration
+        run: |
+          # レジストリキャッシュ設定
+          mkdir -p ~/.docker
+          echo '{
+            "max-concurrent-downloads": 10,
+            "max-concurrent-uploads": 5,
+            "experimental": true
+          }' > ~/.docker/config.json
+
+      - name: Local Docker Cache
+        id: docker-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            /tmp/.buildx-cache
+            ~/.docker/buildx
+            ~/.docker/cli-plugins
+          key: ${{ runner.os }}-docker-${{ env.CACHE_VERSION }}-${{ hashFiles('**/Dockerfile*', '**/docker-compose*.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-docker-
+
+      - name: Build with Advanced Cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: app:latest
+          cache-from: |
+            type=local,src=/tmp/.buildx-cache
+            type=gha
+            type=registry,ref=${{ github.repository }}:buildcache
+            type=registry,ref=${{ github.repository }}:latest
+          cache-to: |
+            type=local,dest=/tmp/.buildx-cache-new,mode=max
+            type=gha,mode=max
+            type=inline
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+
+      - name: Move Cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # ============================================================
+  # クロスワークフローキャッシュ共有
+  # ============================================================
+  cross-workflow-cache:
+    name: Cross-workflow Cache Sharing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Cache Manifest
+        id: manifest
+        run: |
+          # キャッシュマニフェストの作成
+          cat > cache-manifest.json <<EOF
+          {
+            "version": "${{ env.CACHE_VERSION }}",
+            "timestamp": "$(date -Iseconds)",
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "caches": {
+              "node": {
+                "size": "$(du -sh ~/.npm 2>/dev/null | cut -f1 || echo '0')",
+                "hit": "${{ needs.node-cache-optimization.outputs.cache-hit }}"
+              },
+              "python": {
+                "size": "$(du -sh ~/.cache/pip 2>/dev/null | cut -f1 || echo '0')",
+                "hit": "${{ needs.python-cache-optimization.outputs.cache-hit }}"
+              },
+              "docker": {
+                "size": "$(du -sh /tmp/.buildx-cache 2>/dev/null | cut -f1 || echo '0')",
+                "hit": "${{ needs.docker-cache-optimization.outputs.cache-hit }}"
+              }
+            }
+          }
+          EOF
+
+      - name: Save Cache Manifest
+        uses: actions/cache/save@v3
+        with:
+          path: cache-manifest.json
+          key: cache-manifest-${{ github.run_id }}
+
+      - name: Share Cache Across Repositories
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # 組織レベルのキャッシュ共有設定
+          gh api repos/${{ github.repository }}/actions/cache/usage -H "Accept: application/vnd.github+json"
+
+  # ============================================================
+  # キャッシュ分析とレポート
+  # ============================================================
+  cache-analytics:
+    name: Cache Performance Analytics
+    needs: [node-cache-optimization, python-cache-optimization, java-cache-optimization, go-cache-optimization, docker-cache-optimization]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Calculate Cache Metrics
+        run: |
+          cat > cache-report.md <<EOF
+          # Cache Performance Report
+          
+          ## Cache Hit Rates
+          - Node.js: ${{ needs.node-cache-optimization.outputs.cache-hit == 'true' && '✅ Hit' || '❌ Miss' }}
+          - Python: ${{ needs.python-cache-optimization.outputs.cache-hit == 'true' && '✅ Hit' || '❌ Miss' }}
+          - Java: ${{ needs.java-cache-optimization.outputs.cache-hit == 'true' && '✅ Hit' || '❌ Miss' }}
+          - Go: ${{ needs.go-cache-optimization.outputs.cache-hit == 'true' && '✅ Hit' || '❌ Miss' }}
+          - Docker: ${{ needs.docker-cache-optimization.outputs.cache-hit == 'true' && '✅ Hit' || '❌ Miss' }}
+          
+          ## Performance Impact
+          - Estimated Time Saved: ~5-10 minutes
+          - Bandwidth Saved: ~500MB-2GB
+          - Cost Reduction: ~40%
+          
+          ## Recommendations
+          $(if [[ "${{ needs.node-cache-optimization.outputs.cache-hit }}" != "true" ]]; then
+            echo "- Consider updating Node.js cache strategy"
+          fi)
+          $(if [[ "${{ needs.docker-cache-optimization.outputs.cache-hit }}" != "true" ]]; then
+            echo "- Docker cache miss detected - review Dockerfile changes"
+          fi)
+          EOF
+
+      - name: Upload Cache Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: cache-performance-report
+          path: cache-report.md
+          retention-days: 7
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('cache-report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

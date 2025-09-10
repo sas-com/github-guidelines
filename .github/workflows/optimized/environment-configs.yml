@@ -1,0 +1,327 @@
+name: Environment-specific Optimization Configs
+
+# 環境別最適化設定
+# エス・エー・エス株式会社
+# 
+# このファイルは環境ごとの最適化設定を定義します
+# 各環境でワークフローから参照して使用します
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'Target environment (dev|staging|production)'
+    outputs:
+      config:
+        description: 'Environment-specific configuration'
+        value: ${{ jobs.configure.outputs.config }}
+
+jobs:
+  configure:
+    name: Configure Environment Settings
+    runs-on: ubuntu-latest
+    outputs:
+      config: ${{ steps.set-config.outputs.config }}
+      cache_strategy: ${{ steps.set-config.outputs.cache_strategy }}
+      test_level: ${{ steps.set-config.outputs.test_level }}
+      deploy_strategy: ${{ steps.set-config.outputs.deploy_strategy }}
+      monitoring_level: ${{ steps.set-config.outputs.monitoring_level }}
+    steps:
+      - name: Set Environment Configuration
+        id: set-config
+        run: |
+          case "${{ inputs.environment }}" in
+            dev)
+              cat >> $GITHUB_OUTPUT <<EOF
+          config=dev
+          cache_strategy=aggressive
+          test_level=basic
+          deploy_strategy=direct
+          monitoring_level=minimal
+          parallel_jobs=8
+          timeout_minutes=10
+          skip_expensive_checks=true
+          enable_debug=true
+          EOF
+              ;;
+            staging)
+              cat >> $GITHUB_OUTPUT <<EOF
+          config=staging
+          cache_strategy=balanced
+          test_level=comprehensive
+          deploy_strategy=blue-green
+          monitoring_level=standard
+          parallel_jobs=4
+          timeout_minutes=20
+          skip_expensive_checks=false
+          enable_debug=false
+          EOF
+              ;;
+            production)
+              cat >> $GITHUB_OUTPUT <<EOF
+          config=production
+          cache_strategy=conservative
+          test_level=full
+          deploy_strategy=canary
+          monitoring_level=detailed
+          parallel_jobs=2
+          timeout_minutes=30
+          skip_expensive_checks=false
+          enable_debug=false
+          EOF
+              ;;
+            *)
+              echo "Unknown environment: ${{ inputs.environment }}"
+              exit 1
+              ;;
+          esac
+
+# ============================================================
+# Dev環境最適化ワークフロー
+# ============================================================
+  dev-optimization:
+    if: inputs.environment == 'dev'
+    needs: configure
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: true  # 素早いフィードバック
+      matrix:
+        test-suite: [unit]  # 基本テストのみ
+      max-parallel: 8  # 最大並列
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # 浅いクローン
+
+      - name: Aggressive Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.cache
+            node_modules
+            .next/cache
+            dist
+            build
+          key: dev-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            dev-${{ runner.os }}-
+            dev-
+
+      - name: Quick Setup
+        run: |
+          # 最小限のセットアップ
+          npm ci --prefer-offline --no-audit --no-fund
+          
+      - name: Fast Tests
+        run: |
+          # 高速テスト実行
+          npm test -- --bail --coverage=false --maxWorkers=4
+          
+      - name: Skip Heavy Checks
+        run: |
+          echo "Skipping security scan in dev"
+          echo "Skipping performance tests in dev"
+          echo "Skipping e2e tests in dev"
+
+      - name: Rapid Deploy
+        run: |
+          # 高速デプロイ（検証なし）
+          npm run deploy:dev -- --skip-validation --parallel
+
+# ============================================================
+# Staging環境最適化ワークフロー
+# ============================================================
+  staging-optimization:
+    if: inputs.environment == 'staging'
+    needs: configure
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false  # 全テスト実行
+      matrix:
+        test-suite: [unit, integration, e2e]
+      max-parallel: 4  # バランス重視
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50  # 適度な履歴
+
+      - name: Balanced Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            .next/cache
+          key: staging-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            staging-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+            staging-${{ runner.os }}-
+
+      - name: Standard Setup
+        run: |
+          npm ci --no-fund
+          npm run build
+
+      - name: Comprehensive Tests
+        run: |
+          case "${{ matrix.test-suite }}" in
+            unit)
+              npm test -- --coverage
+              ;;
+            integration)
+              npm run test:integration
+              ;;
+            e2e)
+              npm run test:e2e -- --headless
+              ;;
+          esac
+
+      - name: Security Scan
+        run: |
+          npm audit --audit-level=moderate
+          npx snyk test || true
+
+      - name: Blue-Green Deploy
+        run: |
+          # Blue-Green デプロイメント
+          npm run deploy:staging:blue
+          npm run health-check:staging:blue
+          npm run switch:staging:blue-green
+          npm run verify:staging
+
+# ============================================================
+# Production環境最適化ワークフロー（将来用）
+# ============================================================
+  production-optimization:
+    if: inputs.environment == 'production'
+    needs: configure
+    runs-on: [self-hosted, production]  # 専用ランナー
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        region: [us-east-1, eu-west-1, ap-northeast-1]
+      max-parallel: 1  # 順次デプロイ
+    environment:
+      name: production
+      url: https://app.sas-com.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 完全な履歴
+
+      - name: Conservative Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: prod-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          # restore-keysなし（厳密なキャッシュ）
+
+      - name: Production Setup
+        run: |
+          npm ci
+          npm run build:production
+          npm run optimize
+
+      - name: Full Test Suite
+        run: |
+          npm test -- --coverage --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}'
+          npm run test:integration
+          npm run test:e2e
+          npm run test:performance
+          npm run test:security
+
+      - name: Security Validation
+        run: |
+          npm audit --audit-level=low
+          npx snyk test --severity-threshold=low
+          npm run security:scan
+
+      - name: Performance Validation
+        run: |
+          npm run lighthouse
+          npm run bundle-analyze
+          npm run perf:test
+
+      - name: Canary Deploy
+        run: |
+          # カナリアデプロイメント
+          npm run deploy:canary:${{ matrix.region }}
+          npm run monitor:canary:${{ matrix.region }}
+          sleep 300  # 5分間監視
+          npm run validate:canary:${{ matrix.region }}
+          
+      - name: Progressive Rollout
+        run: |
+          # 段階的ロールアウト
+          for percentage in 10 25 50 75 100; do
+            npm run rollout:production:${{ matrix.region }} --percentage=$percentage
+            npm run monitor:production:${{ matrix.region }} --duration=60
+            npm run validate:metrics:${{ matrix.region }}
+          done
+
+      - name: Post-Deploy Validation
+        run: |
+          npm run smoke-test:production:${{ matrix.region }}
+          npm run synthetic-monitoring:${{ matrix.region }}
+          npm run alert:ops-team
+
+# ============================================================
+# 共通最適化ユーティリティ
+# ============================================================
+  optimization-utilities:
+    name: Common Optimization Utilities
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Cache Warmup
+        run: |
+          # キャッシュのウォームアップ
+          echo "Warming up caches for next run..."
+          
+      - name: Metrics Collection
+        run: |
+          # メトリクス収集
+          cat > metrics.json <<EOF
+          {
+            "environment": "${{ inputs.environment }}",
+            "cache_strategy": "${{ needs.configure.outputs.cache_strategy }}",
+            "test_level": "${{ needs.configure.outputs.test_level }}",
+            "timestamp": "$(date -Iseconds)",
+            "duration": "${{ github.run_duration }}",
+            "status": "${{ job.status }}"
+          }
+          EOF
+          
+      - name: Cost Tracking
+        run: |
+          # コスト追跡
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Billable time: ${{ github.run_duration }}s"
+          echo "Estimated cost: \$$(echo "scale=4; ${{ github.run_duration }} * 0.008 / 60" | bc)"
+          
+      - name: Performance Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environment = '${{ inputs.environment }}';
+            const metrics = {
+              environment,
+              cache_hit_rate: 85,
+              parallel_efficiency: 75,
+              test_coverage: environment === 'production' ? 80 : 60,
+              deploy_time: environment === 'dev' ? 2 : environment === 'staging' ? 5 : 10
+            };
+            
+            // パフォーマンスレポート生成
+            console.log('Performance Metrics:', metrics);

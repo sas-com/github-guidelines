@@ -1,0 +1,527 @@
+# Python CI/CDワークフローテンプレート
+# エス・エー・エス株式会社
+# バージョン: 1.0.0
+
+name: Python CI/CD Pipeline
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+      - 'release/*'
+      - 'hotfix/*'
+  pull_request:
+    branches: 
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Python version to test'
+        required: false
+        default: '3.11'
+        type: string
+      environment:
+        description: 'Deploy environment'
+        required: false
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.11'
+  POETRY_VERSION: '1.7.1'
+  REGISTRY_URL: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # コード品質とテスト
+  test:
+    name: Test and Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest]
+        include:
+          - python-version: '3.11'
+            os: windows-latest
+          - python-version: '3.11'
+            os: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.3.4
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4.0.1
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          poetry install --no-interaction --no-ansi --with=dev,test
+      
+      - name: Install project
+        run: poetry install --no-interaction --no-ansi
+      
+      - name: Run code formatting check (Black)
+        run: |
+          poetry run black --check --diff .
+      
+      - name: Run import sorting check (isort)
+        run: |
+          poetry run isort --check-only --diff .
+      
+      - name: Run linting (flake8)
+        run: |
+          poetry run flake8 . --count --show-source --statistics
+      
+      - name: Run type checking (mypy)
+        run: |
+          poetry run mypy .
+        continue-on-error: true
+      
+      - name: Run security linting (bandit)
+        run: |
+          poetry run bandit -r . -f json -o bandit-report.json || true
+          cat bandit-report.json
+      
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --junit-xml=pytest.xml \
+            --tb=short \
+            -v
+        env:
+          PYTHONPATH: .
+          COVERAGE_CORE: sysmon
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.1.0
+        if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4.3.1
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.os }}
+          path: |
+            pytest.xml
+            coverage.xml
+            htmlcov/
+            bandit-report.json
+          retention-days: 30
+
+  # セキュリティスキャン
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.3.4
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-ansi --only=main
+      
+      - name: Run Safety check
+        run: |
+          poetry run safety check --json --output safety-report.json || true
+          cat safety-report.json
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1.70.0
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+        env:
+          SEMGREP_RULES: >-
+            p/security-audit
+            p/secrets
+            p/python
+      
+      - name: Upload Semgrep results to GitHub
+        uses: github/codeql-action/upload-sarif@v3.24.5
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+      
+      - name: Scan with Snyk
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # ビルドとパッケージング
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [test, security]
+    if: always() && needs.test.result == 'success'
+    
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      wheel-name: ${{ steps.build.outputs.wheel-name }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.3.4
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(poetry version --short)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Package version: $VERSION"
+      
+      - name: Build package
+        id: build
+        run: |
+          poetry build
+          WHEEL_NAME=$(ls dist/*.whl | head -n 1 | xargs basename)
+          echo "wheel-name=$WHEEL_NAME" >> $GITHUB_OUTPUT
+          echo "Built wheel: $WHEEL_NAME"
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: python-package
+          path: |
+            dist/
+            !dist/*.tar.gz
+          retention-days: 30
+      
+      # Dockerイメージのビルド
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.2.0
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ${{ env.REGISTRY_URL }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ env.REGISTRY_URL }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            POETRY_VERSION=${{ env.POETRY_VERSION }}
+
+  # パッケージ公開
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    environment:
+      name: pypi
+      url: https://pypi.org/project/${{ github.repository }}
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.4
+        with:
+          name: python-package
+          path: dist/
+      
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.14
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.14
+        if: success()
+
+  # 開発環境デプロイ
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    
+    environment:
+      name: development
+      url: https://dev-api.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Deploy to development
+        run: |
+          echo "Deploying Python application to development"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          echo "Package: ${{ needs.build.outputs.wheel-name }}"
+          # デプロイメントコマンドをここに記述
+          # kubectl apply -f k8s/dev/
+          # helm upgrade --install app ./charts/python-app --values values-dev.yaml
+        env:
+          DEPLOY_ENV: development
+          APP_VERSION: ${{ needs.build.outputs.version }}
+      
+      - name: Run health check
+        run: |
+          echo "Running health check"
+          # curl -f https://dev-api.example.com/health
+          sleep 30  # アプリケーションの起動待ち
+          # python scripts/health_check.py --env=dev
+
+  # ステージング環境デプロイ
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+    
+    environment:
+      name: staging
+      url: https://staging-api.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Deploy to staging
+        run: |
+          echo "Deploying Python application to staging"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          # ステージングデプロイメント
+        env:
+          DEPLOY_ENV: staging
+          APP_VERSION: ${{ needs.build.outputs.version }}
+      
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests against staging"
+          # python -m pytest tests/integration/ --env=staging
+      
+      - name: Run performance tests
+        run: |
+          echo "Running performance tests"
+          # locust -f tests/performance/locustfile.py --host=https://staging-api.example.com
+
+  # 本番環境デプロイ
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main' && needs.deploy-staging.result == 'success'
+    
+    environment:
+      name: production
+      url: https://api.example.com
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.1
+      
+      - name: Pre-deployment check
+        run: |
+          echo "Running pre-deployment checks"
+          # データベースマイグレーション確認
+          # 依存サービス確認
+      
+      - name: Deploy to production
+        run: |
+          echo "Deploying Python application to production"
+          echo "Version: ${{ needs.build.outputs.version }}"
+          # 本番デプロイメント（ブルー・グリーン）
+        env:
+          DEPLOY_ENV: production
+          APP_VERSION: ${{ needs.build.outputs.version }}
+      
+      - name: Post-deployment verification
+        run: |
+          echo "Running post-deployment verification"
+          # curl -f https://api.example.com/health
+          # python scripts/smoke_test.py --env=production
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1.1.4
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          release_name: Release v${{ needs.build.outputs.version }}
+          body: |
+            ## Changes
+            
+            Automated release of version ${{ needs.build.outputs.version }}
+            
+            ## Deployment
+            - ✅ Development
+            - ✅ Staging  
+            - ✅ Production
+          draft: false
+          prerelease: false
+
+  # 通知とクリーンアップ
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, security, build, deploy-dev, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Prepare notification
+        id: prepare
+        run: |
+          STATUS="success"
+          if [[ "${{ needs.test.result }}" == "failure" || 
+                "${{ needs.security.result }}" == "failure" || 
+                "${{ needs.build.result }}" == "failure" ]]; then
+            STATUS="failure"
+          fi
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+      
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3.16.2
+        with:
+          status: ${{ steps.prepare.outputs.status }}
+          channel: '#ci-cd'
+          text: |
+            🐍 Python CI/CD Pipeline: ${{ steps.prepare.outputs.status }}
+            
+            📊 Results:
+            • Tests: ${{ needs.test.result }}
+            • Security: ${{ needs.security.result }}  
+            • Build: ${{ needs.build.result }}
+            • Deploy Dev: ${{ needs.deploy-dev.result }}
+            • Deploy Staging: ${{ needs.deploy-staging.result }}
+            • Deploy Prod: ${{ needs.deploy-production.result }}
+            
+            🚀 Triggered by: ${{ github.actor }}
+            🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

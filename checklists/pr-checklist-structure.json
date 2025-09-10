@@ -1,0 +1,448 @@
+{
+  "version": "1.0.0",
+  "company": "エス・エー・エス株式会社",
+  "lastUpdated": "2025-09-10",
+  "checklists": {
+    "basic": {
+      "name": "基本品質チェックリスト",
+      "categories": [
+        {
+          "name": "code_quality",
+          "label": "コード品質・可読性",
+          "items": [
+            {
+              "id": "naming_convention",
+              "label": "命名規則準拠",
+              "description": "変数名、関数名、クラス名が規約に従っているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["eslint", "prettier"]
+            },
+            {
+              "id": "code_readability",
+              "label": "コードの可読性",
+              "description": "第三者が理解しやすいコードか",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "appropriate_comments",
+              "label": "適切なコメント",
+              "description": "複雑なロジックに説明があるか",
+              "priority": "medium",
+              "autoCheckable": false
+            },
+            {
+              "id": "no_magic_numbers",
+              "label": "マジックナンバー回避",
+              "description": "定数として定義されているか",
+              "priority": "medium",
+              "autoCheckable": true,
+              "tools": ["sonarqube"]
+            },
+            {
+              "id": "function_length",
+              "label": "適切な行数",
+              "description": "関数・メソッドが適切な長さか（目安：50行以内）",
+              "priority": "medium",
+              "autoCheckable": true,
+              "tools": ["sonarqube", "codeclimate"]
+            },
+            {
+              "id": "no_duplication",
+              "label": "重複コード排除",
+              "description": "DRY原則に従っているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["sonarqube", "codeclimate"]
+            }
+          ]
+        },
+        {
+          "name": "architecture",
+          "label": "設計・アーキテクチャ",
+          "items": [
+            {
+              "id": "solid_principles",
+              "label": "SOLID原則準拠",
+              "description": "単一責任、開放閉鎖原則など",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "appropriate_abstraction",
+              "label": "適切な抽象化",
+              "description": "過度な抽象化や不足がないか",
+              "priority": "medium",
+              "autoCheckable": false
+            },
+            {
+              "id": "dependency_direction",
+              "label": "依存関係の方向",
+              "description": "依存性逆転の原則に従っているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["dependency-cruiser"]
+            },
+            {
+              "id": "layer_separation",
+              "label": "レイヤー分離",
+              "description": "プレゼンテーション層、ビジネスロジック層、データ層が分離されているか",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "design_patterns",
+              "label": "デザインパターン",
+              "description": "適切なパターンが使用されているか",
+              "priority": "medium",
+              "autoCheckable": false
+            },
+            {
+              "id": "no_circular_dependencies",
+              "label": "循環参照",
+              "description": "循環参照が存在しないか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["madge", "dependency-cruiser"]
+            }
+          ]
+        },
+        {
+          "name": "performance",
+          "label": "パフォーマンス",
+          "items": [
+            {
+              "id": "algorithm_efficiency",
+              "label": "アルゴリズム効率",
+              "description": "時間計算量・空間計算量が適切か",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "no_n_plus_one",
+              "label": "データベースクエリ",
+              "description": "N+1問題が発生していないか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["bullet", "prosopite"]
+            },
+            {
+              "id": "caching_strategy",
+              "label": "キャッシュ戦略",
+              "description": "適切なキャッシュが実装されているか",
+              "priority": "medium",
+              "autoCheckable": false
+            },
+            {
+              "id": "async_processing",
+              "label": "非同期処理",
+              "description": "重い処理が非同期化されているか",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "no_memory_leaks",
+              "label": "メモリリーク",
+              "description": "メモリリークの可能性がないか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["heapdump", "valgrind"]
+            }
+          ]
+        }
+      ]
+    },
+    "security": {
+      "name": "セキュリティチェックリスト",
+      "categories": [
+        {
+          "name": "input_validation",
+          "label": "入力検証・サニタイゼーション",
+          "items": [
+            {
+              "id": "validate_all_inputs",
+              "label": "入力値検証",
+              "description": "すべての外部入力が検証されているか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["semgrep", "bandit"]
+            },
+            {
+              "id": "type_checking",
+              "label": "型チェック",
+              "description": "適切な型チェックが行われているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["typescript", "mypy"]
+            },
+            {
+              "id": "length_limits",
+              "label": "長さ制限",
+              "description": "入力値の長さが制限されているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["custom-rules"]
+            }
+          ]
+        },
+        {
+          "name": "vulnerabilities",
+          "label": "脆弱性対策",
+          "items": [
+            {
+              "id": "sql_injection",
+              "label": "SQLインジェクション",
+              "description": "パラメータ化クエリが使用されているか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["semgrep", "sqlmap"]
+            },
+            {
+              "id": "xss_prevention",
+              "label": "XSS対策",
+              "description": "出力エスケープが適切に行われているか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["semgrep", "eslint-plugin-security"]
+            },
+            {
+              "id": "csrf_protection",
+              "label": "CSRF対策",
+              "description": "CSRFトークンが実装されているか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["custom-rules"]
+            },
+            {
+              "id": "no_hardcoded_secrets",
+              "label": "機密情報",
+              "description": "APIキーやパスワードがハードコードされていないか",
+              "priority": "critical",
+              "autoCheckable": true,
+              "tools": ["gitleaks", "trufflehog", "detect-secrets"]
+            }
+          ]
+        }
+      ]
+    },
+    "testing": {
+      "name": "テスト品質チェックリスト",
+      "categories": [
+        {
+          "name": "test_coverage",
+          "label": "テストカバレッジと品質",
+          "items": [
+            {
+              "id": "unit_tests",
+              "label": "単体テスト",
+              "description": "主要な関数・メソッドがテストされているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["jest", "pytest", "junit"]
+            },
+            {
+              "id": "integration_tests",
+              "label": "統合テスト",
+              "description": "システム間の連携がテストされているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["postman", "cypress"]
+            },
+            {
+              "id": "coverage_threshold",
+              "label": "カバレッジ基準",
+              "description": "80%以上のカバレッジが達成されているか",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["istanbul", "coverage.py", "jacoco"]
+            },
+            {
+              "id": "test_independence",
+              "label": "テストの独立性",
+              "description": "テストが他のテストに依存していないか",
+              "priority": "medium",
+              "autoCheckable": false
+            }
+          ]
+        },
+        {
+          "name": "edge_cases",
+          "label": "エッジケース対応",
+          "items": [
+            {
+              "id": "boundary_tests",
+              "label": "境界値テスト",
+              "description": "最小値・最大値のテストがあるか",
+              "priority": "high",
+              "autoCheckable": false
+            },
+            {
+              "id": "null_handling",
+              "label": "NULL/undefined処理",
+              "description": "NULL安全な実装か",
+              "priority": "high",
+              "autoCheckable": true,
+              "tools": ["typescript", "nullable-checker"]
+            },
+            {
+              "id": "empty_collections",
+              "label": "空配列・空文字列",
+              "description": "適切に処理されているか",
+              "priority": "medium",
+              "autoCheckable": false
+            },
+            {
+              "id": "concurrency",
+              "label": "同時実行",
+              "description": "並行処理時の問題がないか",
+              "priority": "high",
+              "autoCheckable": false
+            }
+          ]
+        }
+      ]
+    },
+    "levels": {
+      "junior": {
+        "name": "Junior Reviewer",
+        "description": "新人・初級レビュアー向け",
+        "requiredCategories": [
+          "code_quality",
+          "basic_testing"
+        ],
+        "checkpoints": [
+          "naming_convention",
+          "code_readability",
+          "no_duplication",
+          "unit_tests",
+          "no_hardcoded_secrets",
+          "appropriate_comments"
+        ]
+      },
+      "senior": {
+        "name": "Senior Reviewer",
+        "description": "経験者・上級レビュアー向け",
+        "requiredCategories": [
+          "code_quality",
+          "architecture",
+          "performance",
+          "security",
+          "testing"
+        ],
+        "additionalCheckpoints": [
+          "solid_principles",
+          "algorithm_efficiency",
+          "no_n_plus_one",
+          "sql_injection",
+          "xss_prevention"
+        ]
+      },
+      "architect": {
+        "name": "Tech Lead / Architect",
+        "description": "テックリード・アーキテクト向け",
+        "requiredCategories": [
+          "all"
+        ],
+        "focusAreas": [
+          "system_impact",
+          "scalability",
+          "maintainability",
+          "technical_debt",
+          "architectural_consistency"
+        ]
+      }
+    },
+    "pr_types": {
+      "feature": {
+        "name": "Feature PR",
+        "description": "新機能追加",
+        "priorityChecks": [
+          "requirement_fulfillment",
+          "user_story_completion",
+          "ui_ux_consistency",
+          "backward_compatibility",
+          "comprehensive_testing"
+        ]
+      },
+      "bugfix": {
+        "name": "Bugfix PR",
+        "description": "バグ修正",
+        "priorityChecks": [
+          "root_cause_identified",
+          "minimal_changes",
+          "regression_tests",
+          "no_side_effects",
+          "test_case_added"
+        ]
+      },
+      "hotfix": {
+        "name": "Hotfix PR",
+        "description": "緊急修正",
+        "priorityChecks": [
+          "impact_assessment",
+          "minimal_risk",
+          "rollback_plan",
+          "emergency_testing",
+          "stakeholder_notification"
+        ]
+      },
+      "refactoring": {
+        "name": "Refactoring PR",
+        "description": "リファクタリング",
+        "priorityChecks": [
+          "no_functional_changes",
+          "tests_maintained",
+          "performance_maintained",
+          "code_quality_improved",
+          "technical_debt_reduced"
+        ]
+      }
+    },
+    "automation": {
+      "ci_cd_integration": {
+        "github_actions": {
+          "workflow": ".github/workflows/pr-checks.yml",
+          "checks": [
+            "lint",
+            "test",
+            "security_scan",
+            "coverage",
+            "build"
+          ]
+        },
+        "gitlab_ci": {
+          "pipeline": ".gitlab-ci.yml",
+          "stages": [
+            "validate",
+            "test",
+            "security",
+            "quality"
+          ]
+        }
+      },
+      "tools": {
+        "static_analysis": [
+          "sonarqube",
+          "codeclimate",
+          "semgrep"
+        ],
+        "security_scanning": [
+          "snyk",
+          "gitleaks",
+          "bandit"
+        ],
+        "testing": [
+          "jest",
+          "pytest",
+          "cypress"
+        ],
+        "performance": [
+          "lighthouse",
+          "k6",
+          "jmeter"
+        ]
+      }
+    }
+  }
+}

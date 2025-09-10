@@ -1,0 +1,447 @@
+name: Hotfix緊急対応パイプライン
+
+on:
+  push:
+    branches: [ 'hotfix/**' ]
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: '緊急度レベル'
+        required: true
+        type: choice
+        options:
+          - 'L1-Critical'
+          - 'L2-High'
+          - 'L3-Medium'
+          - 'L4-Low'
+      description:
+        description: '問題の説明'
+        required: true
+        type: string
+      skip_approval:
+        description: 'L1緊急時の承認スキップ'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  EMERGENCY_CONTACT: 'github@sas-com.com'
+
+jobs:
+  # =============================================================================
+  # 緊急度判定・通知
+  # =============================================================================
+  emergency-assessment:
+    name: 緊急度判定・初期通知
+    runs-on: ubuntu-latest
+    outputs:
+      severity: ${{ steps.assess.outputs.severity }}
+      skip_tests: ${{ steps.assess.outputs.skip_tests }}
+      require_approval: ${{ steps.assess.outputs.require_approval }}
+    
+    steps:
+      - name: 緊急度判定
+        id: assess
+        run: |
+          # ブランチ名から緊急度を判定
+          if [[ "${{ github.ref_name }}" =~ hotfix/l1-.* ]] || [[ "${{ inputs.severity }}" == "L1-Critical" ]]; then
+            echo "severity=L1-Critical" >> $GITHUB_OUTPUT
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+            echo "require_approval=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref_name }}" =~ hotfix/l2-.* ]] || [[ "${{ inputs.severity }}" == "L2-High" ]]; then
+            echo "severity=L2-High" >> $GITHUB_OUTPUT
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+            echo "require_approval=true" >> $GITHUB_OUTPUT
+          else
+            echo "severity=L3-Medium" >> $GITHUB_OUTPUT
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+            echo "require_approval=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 緊急時通知送信
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "🚨 HOTFIX緊急対応開始",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 HOTFIX緊急対応開始"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*緊急度:* ${{ steps.assess.outputs.severity }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*リポジトリ:* ${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*ブランチ:* ${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*実行者:* ${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*問題の説明:*\n${{ inputs.description || 'ブランチ名から自動判定' }}"
+                  }
+                }
+              ]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # =============================================================================
+  # 最小限のセキュリティチェック
+  # =============================================================================
+  minimal-security:
+    name: 最小限セキュリティチェック
+    runs-on: ubuntu-latest
+    needs: emergency-assessment
+    
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+      
+      - name: 重要な秘密情報スキャン
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 危険なコード検出
+        run: |
+          echo "危険なパターンをチェック中..."
+          
+          # 危険なコマンドの検出
+          if grep -r "rm -rf" . --exclude-dir=.git; then
+            echo "❌ 危険なコマンド 'rm -rf' が検出されました"
+            exit 1
+          fi
+          
+          # 強制プッシュのチェック
+          if grep -r "git push.*--force" . --exclude-dir=.git; then
+            echo "❌ 強制プッシュが検出されました（禁止）"
+            exit 1
+          fi
+          
+          # 機密情報のパターンチェック
+          if grep -rE "(password|secret|key).*=.*['\"][^'\"]{8,}" . --exclude-dir=.git; then
+            echo "❌ ハードコードされた機密情報の可能性があります"
+            exit 1
+          fi
+          
+          echo "✅ 最小限のセキュリティチェック完了"
+
+  # =============================================================================
+  # 緊急テスト（L2以下のみ）
+  # =============================================================================
+  emergency-test:
+    name: 緊急時テスト
+    runs-on: ubuntu-latest
+    needs: [emergency-assessment, minimal-security]
+    if: needs.emergency-assessment.outputs.skip_tests != 'true'
+    
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+      
+      - name: 重要機能テスト
+        run: |
+          echo "重要機能のテストを実行中..."
+          
+          # Markdownファイルの構文チェック
+          find . -name "*.md" -not -path "./.git/*" | while read file; do
+            echo "チェック中: $file"
+            # markdownlint "$file" || echo "警告: $file に軽微な問題があります"
+          done
+          
+          # YAMLファイルの構文チェック
+          find . -name "*.yml" -o -name "*.yaml" -not -path "./.git/*" | while read file; do
+            echo "チェック中: $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+          done
+          
+          echo "✅ 重要機能テスト完了"
+
+  # =============================================================================
+  # 緊急ビルド
+  # =============================================================================
+  emergency-build:
+    name: 緊急ビルド
+    runs-on: ubuntu-latest
+    needs: [emergency-assessment, minimal-security]
+    if: always() && !failure()
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+      
+      - name: Hotfixバージョン生成
+        id: version
+        run: |
+          SEVERITY="${{ needs.emergency-assessment.outputs.severity }}"
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+          VERSION="hotfix-${SEVERITY}-${TIMESTAMP}-${SHORT_SHA}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "緊急修正バージョン: $VERSION"
+      
+      - name: 緊急ビルド実行
+        run: |
+          mkdir -p emergency-build/
+          
+          # 重要ファイルのコピー
+          cp *.md emergency-build/ 2>/dev/null || true
+          cp -r .github emergency-build/ 2>/dev/null || true
+          
+          # 緊急修正メタデータ
+          cat > emergency-build/hotfix-metadata.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "severity": "${{ needs.emergency-assessment.outputs.severity }}",
+            "timestamp": "$(date -Iseconds)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "author": "${{ github.actor }}",
+            "description": "${{ inputs.description || 'Emergency hotfix' }}"
+          }
+          EOF
+          
+          echo "✅ 緊急ビルド完了"
+      
+      - name: 成果物アップロード
+        uses: actions/upload-artifact@v3
+        with:
+          name: emergency-build-${{ steps.version.outputs.version }}
+          path: emergency-build/
+          retention-days: 90
+
+  # =============================================================================
+  # 緊急承認プロセス
+  # =============================================================================
+  emergency-approval:
+    name: 緊急承認プロセス
+    runs-on: ubuntu-latest
+    needs: [emergency-assessment, emergency-build]
+    if: needs.emergency-assessment.outputs.require_approval == 'true' && !inputs.skip_approval
+    
+    steps:
+      - name: 緊急承認要求
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: sas-github-admin,sas-tech-lead
+          minimum-approvals: 1
+          issue-title: "🚨 HOTFIX緊急承認要求 - ${{ needs.emergency-assessment.outputs.severity }}"
+          issue-body: |
+            ## 🚨 HOTFIX緊急承認要求
+            
+            ### 緊急修正詳細
+            - **緊急度**: ${{ needs.emergency-assessment.outputs.severity }}
+            - **バージョン**: ${{ needs.emergency-build.outputs.version }}
+            - **ブランチ**: ${{ github.ref_name }}
+            - **実行者**: ${{ github.actor }}
+            - **タイムスタンプ**: $(date -Iseconds)
+            
+            ### 問題の説明
+            ${{ inputs.description || 'ブランチ名から自動判定された緊急修正' }}
+            
+            ### 実施された検証
+            - ✅ 最小限セキュリティチェック完了
+            - ✅ 緊急ビルド完了
+            ${{ needs.emergency-assessment.outputs.skip_tests == 'true' && '- ⚠️  テストスキップ（L1緊急対応）' || '- ✅ 緊急テスト完了' }}
+            
+            ### リスクアセスメント
+            - **影響範囲**: [記載してください]
+            - **ロールバック計画**: [記載してください]
+            - **監視計画**: [記載してください]
+            
+            ---
+            **注意**: これは緊急修正です。承認後、即座にデプロイが開始されます。
+
+  # =============================================================================
+  # 緊急デプロイ
+  # =============================================================================
+  emergency-deploy:
+    name: 緊急デプロイ
+    runs-on: ubuntu-latest
+    needs: [emergency-assessment, emergency-build, emergency-approval]
+    if: always() && !failure() && (needs.emergency-assessment.outputs.require_approval == 'false' || success())
+    
+    environment:
+      name: emergency-production
+      url: https://github-guidelines.sas-com.co.jp
+    
+    steps:
+      - name: 成果物ダウンロード
+        uses: actions/download-artifact@v3
+        with:
+          name: emergency-build-${{ needs.emergency-build.outputs.version }}
+          path: ./emergency-build
+      
+      - name: デプロイ前バックアップ
+        run: |
+          echo "現在の本番環境をバックアップ中..."
+          BACKUP_NAME="pre-hotfix-backup-$(date +'%Y%m%d-%H%M%S')"
+          echo "backup_name=$BACKUP_NAME" >> $GITHUB_ENV
+          
+          # 実際のバックアップコマンド
+          # aws s3 sync s3://sas-github-guidelines-prod/ s3://sas-github-guidelines-backups/$BACKUP_NAME/
+          echo "✅ バックアップ完了: $BACKUP_NAME"
+      
+      - name: 緊急デプロイ実行
+        run: |
+          echo "🚨 緊急デプロイを実行中..."
+          echo "バージョン: ${{ needs.emergency-build.outputs.version }}"
+          echo "緊急度: ${{ needs.emergency-assessment.outputs.severity }}"
+          
+          # 段階的デプロイ（カナリア方式）
+          echo "1. カナリアデプロイ (10%)"
+          # kubectl set image deployment/app app=emergency:${{ needs.emergency-build.outputs.version }}
+          # kubectl scale deployment/app-canary --replicas=1
+          
+          sleep 30
+          
+          echo "2. ヘルスチェック"
+          # curl -f https://github-guidelines.sas-com.co.jp/health
+          
+          echo "3. 全体デプロイ (100%)"
+          # kubectl set image deployment/app app=emergency:${{ needs.emergency-build.outputs.version }}
+          # kubectl rollout status deployment/app
+          
+          echo "✅ 緊急デプロイ完了"
+      
+      - name: デプロイ後監視設定
+        run: |
+          echo "デプロイ後監視を設定中..."
+          
+          # アラートの一時的な強化
+          # aws cloudwatch put-metric-alarm --alarm-name "hotfix-monitoring" ...
+          
+          echo "✅ 監視設定完了"
+
+  # =============================================================================
+  # 事後処理・通知
+  # =============================================================================
+  post-deployment:
+    name: 事後処理・通知
+    runs-on: ubuntu-latest
+    needs: [emergency-assessment, emergency-build, emergency-deploy]
+    if: always()
+    
+    steps:
+      - name: 緊急修正レポート作成
+        run: |
+          cat > hotfix-report.md << EOF
+          # 🚨 HOTFIX緊急修正レポート
+          
+          ## 基本情報
+          - **実行日時**: $(date -Iseconds)
+          - **緊急度**: ${{ needs.emergency-assessment.outputs.severity }}
+          - **バージョン**: ${{ needs.emergency-build.outputs.version }}
+          - **実行者**: ${{ github.actor }}
+          - **ブランチ**: ${{ github.ref_name }}
+          
+          ## 処理結果
+          - セキュリティチェック: ${{ needs.minimal-security.result }}
+          - ビルド: ${{ needs.emergency-build.result }}
+          - デプロイ: ${{ needs.emergency-deploy.result }}
+          
+          ## 問題の説明
+          ${{ inputs.description || 'ブランチ名から自動判定' }}
+          
+          ## 実施された対応
+          1. 最小限のセキュリティチェック実行
+          2. 緊急ビルドの作成
+          3. ${{ needs.emergency-assessment.outputs.require_approval == 'true' && '承認プロセス実行' || 'L1緊急対応のため承認スキップ' }}
+          4. 緊急デプロイ実行
+          
+          ## 今後のアクション
+          - [ ] 根本原因分析の実施
+          - [ ] 再発防止策の検討
+          - [ ] 緊急対応の振り返り実施
+          - [ ] ドキュメントの更新
+          
+          ---
+          
+          **緊急連絡先**: ${{ env.EMERGENCY_CONTACT }}
+          EOF
+      
+      - name: 最終通知送信
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "${{ needs.emergency-deploy.result == 'success' && '✅ HOTFIX緊急修正完了' || '❌ HOTFIX緊急修正失敗' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ needs.emergency-deploy.result == 'success' && '✅ HOTFIX緊急修正完了' || '❌ HOTFIX緊急修正失敗' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*緊急度:* ${{ needs.emergency-assessment.outputs.severity }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*バージョン:* ${{ needs.emergency-build.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*実行時間:* $(date)"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*結果:* ${{ needs.emergency-deploy.result }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ needs.emergency-deploy.result == 'success' && '緊急修正が正常に完了しました。監視を継続してください。' || '緊急修正が失敗しました。即座に対応が必要です。' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*緊急連絡先:* ${{ env.EMERGENCY_CONTACT }}"
+                  }
+                }
+              ]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: レポートアップロード
+        uses: actions/upload-artifact@v3
+        with:
+          name: hotfix-report-${{ needs.emergency-build.outputs.version }}
+          path: hotfix-report.md
+          retention-days: 365

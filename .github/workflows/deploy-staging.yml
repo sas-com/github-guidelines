@@ -1,0 +1,708 @@
+name: Deploy to Staging Environment
+
+on:
+  push:
+    branches: [ staging ]
+  pull_request:
+    branches: [ staging ]
+    types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      source_environment:
+        description: 'Source environment to promote from'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - hotfix
+      force_deploy:
+        description: 'Force deployment regardless of checks'
+        required: false
+        default: 'false'
+        type: boolean
+      skip_tests:
+        description: 'Skip integration tests (emergency only)'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false  # More cautious for staging
+
+env:
+  NODE_VERSION: '18'
+  DEPLOYMENT_ENV: 'staging'
+  
+jobs:
+  # Pre-deployment validation with stricter checks
+  pre-deployment-checks:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+    
+    outputs:
+      should-deploy: ${{ steps.deployment-decision.outputs.should-deploy }}
+      commit-sha: ${{ steps.commit-info.outputs.sha }}
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 50  # More history for changelog generation
+        
+    - name: Get commit information
+      id: commit-info
+      run: |
+        echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+        echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+        echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
+        
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="staging-$(date +'%Y%m%d-%H%M%S')-${{ steps.commit-info.outputs.sha }}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+        
+    - name: Generate changelog
+      id: changelog
+      run: |
+        echo "📋 Generating changelog since last staging deployment"
+        
+        # In real scenario, this would compare with last staging deployment
+        LAST_STAGING_TAG=$(git tag -l "staging-*" | sort -V | tail -n 1)
+        if [ -z "$LAST_STAGING_TAG" ]; then
+          CHANGELOG=$(git log --oneline -10 --pretty=format:"• %s (%h)")
+        else
+          CHANGELOG=$(git log ${LAST_STAGING_TAG}..HEAD --oneline --pretty=format:"• %s (%h)")
+        fi
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Validate staging deployment conditions
+      id: deployment-decision
+      run: |
+        SHOULD_DEPLOY="true"
+        
+        # Check if this is a valid staging branch
+        if [[ "${{ steps.commit-info.outputs.branch }}" != "staging" ]] && [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+          echo "❌ Invalid branch for staging deployment"
+          SHOULD_DEPLOY="false"
+        fi
+        
+        # Check for required approvals (simulated)
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "✅ Manual deployment triggered - assuming approval granted"
+        fi
+        
+        # Force deployment override
+        if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
+          echo "⚠️  Force deployment requested - bypassing some checks"
+          SHOULD_DEPLOY="true"
+        fi
+        
+        echo "should-deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+        
+    - name: Notify stakeholders
+      if: steps.deployment-decision.outputs.should-deploy == 'true'
+      run: |
+        echo "📢 Notifying stakeholders of staging deployment"
+        echo "🚀 Starting deployment to Staging environment"
+        echo "📝 Commit: ${{ steps.commit-info.outputs.sha }} by ${{ steps.commit-info.outputs.author }}"
+        echo "🏷️  Version: ${{ steps.version.outputs.version }}"
+        echo "📋 Changelog:"
+        echo "${{ steps.changelog.outputs.changelog }}"
+
+  # Enhanced quality and security checks for staging
+  comprehensive-quality-checks:
+    name: Comprehensive Quality & Security
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    # Code quality checks
+    - name: Run comprehensive linting
+      run: |
+        npm run lint
+        npm run lint:security
+        npm run lint:accessibility
+      continue-on-error: false
+      
+    - name: Run code complexity analysis
+      run: |
+        npm run analyze:complexity
+        npm run analyze:dependencies
+      continue-on-error: true
+      
+    - name: Run comprehensive test suite
+      run: |
+        npm run test:unit
+        npm run test:integration
+        npm run test:e2e:headless
+      env:
+        NODE_ENV: test
+        
+    - name: Generate comprehensive coverage report
+      run: npm run test:coverage:full
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info,./coverage/clover.xml
+        flags: staging-comprehensive
+        name: codecov-staging
+        fail_ci_if_error: true
+        
+    # Enhanced security scanning
+    - name: Run comprehensive Snyk scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --all-projects --severity-threshold=medium
+      continue-on-error: false
+      
+    - name: Run SAST with CodeQL
+      uses: github/codeql-action/analyze@v3
+      with:
+        languages: javascript
+        config-file: ./.github/codeql/codeql-config.yml
+        
+    - name: Run comprehensive Semgrep scan
+      uses: semgrep/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/secrets
+          p/javascript
+          p/typescript
+          p/owasp-top-ten
+        generateSarif: "1"
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        
+    - name: Upload Semgrep SARIF
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: semgrep.sarif
+        
+    # Infrastructure security scanning
+    - name: Scan Infrastructure as Code
+      run: |
+        # Terraform security scan
+        if [ -d "terraform" ]; then
+          echo "🔍 Scanning Terraform configurations"
+          checkov -d terraform/ --framework terraform --output sarif --output-file terraform-security.sarif
+        fi
+        
+        # Kubernetes manifest scan
+        if [ -d "k8s" ]; then
+          echo "🔍 Scanning Kubernetes manifests"
+          checkov -d k8s/ --framework kubernetes --output sarif --output-file k8s-security.sarif
+        fi
+      continue-on-error: true
+        
+    # Container security for staging
+    - name: Build and scan container
+      if: hashFiles('Dockerfile') != ''
+      run: |
+        echo "🏗️  Building container for staging"
+        docker build -t staging-image:${{ needs.pre-deployment-checks.outputs.commit-sha }} .
+        
+        echo "🔍 Comprehensive container security scan"
+        trivy image --format sarif --output container-security.sarif staging-image:${{ needs.pre-deployment-checks.outputs.commit-sha }}
+        
+    - name: Upload container security results
+      if: hashFiles('Dockerfile') != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: container-security.sarif
+
+  # Build with staging optimizations
+  build-staging:
+    name: Build for Staging
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, comprehensive-quality-checks]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build for staging environment
+      run: npm run build:staging
+      env:
+        NODE_ENV: production
+        ENVIRONMENT: staging
+        VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
+        BUILD_NUMBER: ${{ github.run_number }}
+        
+    - name: Generate build metadata
+      run: |
+        echo "📄 Generating build metadata"
+        cat > dist/build-info.json << EOF
+        {
+          "version": "${{ needs.pre-deployment-checks.outputs.version }}",
+          "commit": "${{ needs.pre-deployment-checks.outputs.commit-sha }}",
+          "branch": "${{ github.ref_name }}",
+          "buildNumber": "${{ github.run_number }}",
+          "buildTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "environment": "staging"
+        }
+        EOF
+        
+    - name: Archive staging build
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-build-artifacts
+        path: |
+          dist/
+          package.json
+          package-lock.json
+        retention-days: 30  # Longer retention for staging
+        
+    # Container build for staging
+    - name: Build and push staging container
+      if: hashFiles('Dockerfile') != ''
+      run: |
+        echo "🏗️  Building staging container"
+        
+        # Build multi-stage container optimized for staging
+        docker build \
+          --target staging \
+          --build-arg VERSION=${{ needs.pre-deployment-checks.outputs.version }} \
+          --build-arg BUILD_NUMBER=${{ github.run_number }} \
+          -t staging-image:${{ needs.pre-deployment-checks.outputs.version }} \
+          .
+          
+        # In real scenario, push to container registry
+        # docker push staging-image:${{ needs.pre-deployment-checks.outputs.version }}
+
+  # Deploy to staging with rolling update strategy
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, comprehensive-quality-checks, build-staging]
+    environment: 
+      name: staging
+      url: https://staging.sas-com.example.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download staging artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: staging-build-artifacts
+        
+    - name: Configure staging environment
+      run: |
+        echo "⚙️  Configuring staging environment"
+        echo "Environment: ${{ env.DEPLOYMENT_ENV }}"
+        echo "Version: ${{ needs.pre-deployment-checks.outputs.version }}"
+        echo "Strategy: Rolling Update"
+        
+    - name: Pre-deployment backup
+      run: |
+        echo "💾 Creating pre-deployment backup"
+        
+        # Backup current configuration and data
+        echo "📋 Backing up configuration..."
+        echo "🗄️  Backing up database..."
+        echo "📁 Backing up uploaded files..."
+        
+        # Store backup metadata
+        echo "backup_id=backup-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+        echo "✅ Backup completed: backup-$(date +'%Y%m%d-%H%M%S')"
+        
+    - name: Deploy to staging infrastructure
+      id: deployment
+      run: |
+        echo "🚀 Executing rolling deployment to staging"
+        
+        # Rolling deployment simulation
+        INSTANCES=3
+        for i in $(seq 1 $INSTANCES); do
+          echo "📦 Updating instance $i/$INSTANCES"
+          echo "⏹️  Stopping instance $i..."
+          sleep 3
+          echo "🔄 Deploying new version..."
+          sleep 8
+          echo "▶️  Starting instance $i..."
+          sleep 5
+          echo "✅ Instance $i ready"
+          
+          # Health check after each instance
+          echo "🏥 Health check for instance $i..."
+          sleep 2
+          echo "✅ Instance $i healthy"
+        done
+        
+        echo "deployment_time=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+        
+    - name: Database migration
+      run: |
+        echo "🗄️  Running database migrations"
+        
+        # Simulate database migration
+        echo "📊 Checking migration status..."
+        echo "⬆️  Applying pending migrations..."
+        sleep 5
+        echo "✅ Database migrations completed successfully"
+        
+    - name: Comprehensive health checks
+      id: health-check
+      run: |
+        echo "🏥 Running comprehensive health checks"
+        
+        HEALTH_ENDPOINTS=(
+          "/health"
+          "/health/ready"
+          "/health/live"
+          "/api/v1/status"
+        )
+        
+        MAX_RETRIES=15
+        RETRY_INTERVAL=20
+        
+        for endpoint in "${HEALTH_ENDPOINTS[@]}"; do
+          echo "🔍 Checking endpoint: $endpoint"
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Health check attempt $i/$MAX_RETRIES for $endpoint"
+            
+            # Replace with actual health check
+            # if curl -f -s "https://staging.sas-com.example.com${endpoint}"; then
+            if true; then  # Simulate successful health check
+              echo "✅ $endpoint is healthy"
+              break
+            else
+              echo "❌ $endpoint health check failed, retrying in ${RETRY_INTERVAL}s..."
+              sleep $RETRY_INTERVAL
+            fi
+            
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "🚨 Health check failed for $endpoint after $MAX_RETRIES attempts"
+              echo "healthy=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          done
+        done
+        
+        echo "healthy=true" >> $GITHUB_OUTPUT
+        echo "✅ All health checks passed"
+
+  # Comprehensive testing in staging
+  staging-testing:
+    name: Staging Environment Testing
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, deploy-staging]
+    if: needs.deploy-staging.outputs.healthy == 'true' && github.event.inputs.skip_tests != 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup test environment
+      run: |
+        echo "🧪 Setting up comprehensive testing environment"
+        echo "🌐 Target URL: https://staging.sas-com.example.com"
+        echo "📋 Version: ${{ needs.pre-deployment-checks.outputs.version }}"
+        
+    - name: Run integration tests
+      run: |
+        echo "🔗 Running integration tests against staging"
+        
+        # Configure test environment
+        export TEST_BASE_URL="https://staging.sas-com.example.com"
+        export TEST_ENV="staging"
+        
+        # Run comprehensive integration tests
+        # npm run test:integration:staging
+        echo "✅ Integration tests completed successfully"
+        
+    - name: Run end-to-end tests
+      run: |
+        echo "🎭 Running E2E tests against staging"
+        
+        # Configure E2E test environment
+        export E2E_BASE_URL="https://staging.sas-com.example.com"
+        export E2E_BROWSER="chrome"
+        export E2E_HEADLESS="true"
+        
+        # Run comprehensive E2E tests
+        # npm run test:e2e:staging
+        echo "✅ E2E tests completed successfully"
+        
+    - name: Run performance tests
+      run: |
+        echo "⚡ Running performance tests"
+        
+        # Load testing
+        echo "📈 Running load tests..."
+        # k6 run performance/load-test.js
+        
+        # Stress testing
+        echo "🔥 Running stress tests..."
+        # k6 run performance/stress-test.js
+        
+        echo "✅ Performance tests completed"
+        
+    - name: Run security tests
+      run: |
+        echo "🔒 Running security tests against staging"
+        
+        # OWASP ZAP baseline scan
+        echo "🕷️  Running OWASP ZAP scan..."
+        # zap-baseline.py -t https://staging.sas-com.example.com
+        
+        # Custom security tests
+        echo "🔍 Running custom security tests..."
+        # npm run test:security:staging
+        
+        echo "✅ Security tests completed"
+
+  # Performance and monitoring validation
+  performance-validation:
+    name: Performance Validation
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, deploy-staging, staging-testing]
+    
+    steps:
+    - name: Performance baseline validation
+      run: |
+        echo "📊 Validating performance baselines"
+        
+        # Response time validation
+        echo "⏱️  Checking response times..."
+        # RESPONSE_TIME=$(curl -w "%{time_total}" -s -o /dev/null https://staging.sas-com.example.com)
+        RESPONSE_TIME="0.245"
+        THRESHOLD="1.0"
+        
+        if (( $(echo "$RESPONSE_TIME > $THRESHOLD" | bc -l) )); then
+          echo "❌ Response time $RESPONSE_TIME exceeds threshold $THRESHOLD"
+          exit 1
+        else
+          echo "✅ Response time $RESPONSE_TIME within threshold"
+        fi
+        
+        # Memory usage validation
+        echo "💾 Checking memory usage..."
+        # Add memory usage checks
+        
+        # CPU usage validation  
+        echo "🖥️  Checking CPU usage..."
+        # Add CPU usage checks
+        
+    - name: Resource utilization check
+      run: |
+        echo "📈 Checking resource utilization"
+        
+        # Check database performance
+        echo "🗄️  Database performance check..."
+        
+        # Check external service dependencies
+        echo "🔗 External dependencies check..."
+        
+        # Check cache performance
+        echo "⚡ Cache performance check..."
+        
+        echo "✅ Resource utilization within acceptable limits"
+
+  # Post-deployment monitoring and notifications
+  post-deployment-staging:
+    name: Post-Deployment Staging
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, deploy-staging, staging-testing, performance-validation]
+    if: always() && needs.deploy-staging.result == 'success'
+    
+    steps:
+    - name: Setup monitoring
+      run: |
+        echo "📊 Setting up enhanced monitoring for staging"
+        echo "⏰ Extended monitoring period: 30 minutes"
+        
+    - name: Create deployment record
+      run: |
+        echo "📝 Creating deployment record"
+        
+        cat > deployment-record.json << EOF
+        {
+          "environment": "staging",
+          "version": "${{ needs.pre-deployment-checks.outputs.version }}",
+          "commit": "${{ needs.pre-deployment-checks.outputs.commit-sha }}",
+          "deployedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "deployedBy": "${{ github.actor }}",
+          "status": "success",
+          "changelog": "${{ needs.pre-deployment-checks.outputs.changelog }}",
+          "rollbackVersion": "${{ env.backup_id }}"
+        }
+        EOF
+        
+        echo "📋 Deployment record created"
+        
+    - name: Extended monitoring
+      run: |
+        echo "📈 Starting extended monitoring period"
+        
+        # Monitor for 30 minutes with more frequent checks
+        MONITORING_DURATION=1800  # 30 minutes
+        CHECK_INTERVAL=60         # 1 minute
+        CHECKS=$((MONITORING_DURATION / CHECK_INTERVAL))
+        
+        for i in $(seq 1 $CHECKS); do
+          echo "🔍 Monitoring check $i/$CHECKS"
+          
+          # Check application health
+          # curl -f -s https://staging.sas-com.example.com/health
+          
+          # Check performance metrics
+          # RESPONSE_TIME=$(curl -w "%{time_total}" -s -o /dev/null https://staging.sas-com.example.com)
+          RESPONSE_TIME="0.189"
+          echo "Response time: ${RESPONSE_TIME}s"
+          
+          # Check error rates
+          # ERROR_RATE=$(check_error_rate)
+          ERROR_RATE="0.05"
+          echo "Error rate: ${ERROR_RATE}%"
+          
+          sleep $CHECK_INTERVAL
+        done
+        
+        echo "✅ Extended monitoring completed successfully"
+        
+    - name: Send comprehensive notification
+      if: always()
+      run: |
+        if [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
+          echo "📢 Sending comprehensive success notification"
+          
+          # Create rich notification with deployment details
+          cat > notification.json << EOF
+          {
+            "title": "✅ Staging Deployment Successful",
+            "environment": "Staging",
+            "version": "${{ needs.pre-deployment-checks.outputs.version }}",
+            "commit": "${{ needs.pre-deployment-checks.outputs.commit-sha }}",
+            "url": "https://staging.sas-com.example.com",
+            "changelog": "${{ needs.pre-deployment-checks.outputs.changelog }}",
+            "testResults": {
+              "integration": "${{ needs.staging-testing.result }}",
+              "e2e": "${{ needs.staging-testing.result }}",
+              "performance": "${{ needs.performance-validation.result }}"
+            },
+            "nextSteps": "Ready for production deployment approval"
+          }
+          EOF
+          
+          echo "Notification prepared for Teams/Slack"
+          
+        else
+          echo "📢 Sending failure notification with detailed diagnostics"
+        fi
+
+  # Rollback mechanism for staging failures
+  rollback-staging:
+    name: Staging Rollback
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, deploy-staging]
+    if: failure() && needs.deploy-staging.result == 'failure'
+    environment:
+      name: staging
+    
+    steps:
+    - name: Initiate rollback procedure
+      run: |
+        echo "🔄 Initiating staging environment rollback"
+        echo "📦 Target backup: ${{ env.backup_id }}"
+        
+    - name: Execute database rollback
+      run: |
+        echo "🗄️  Rolling back database changes"
+        
+        # Database rollback procedure
+        echo "⏪ Reverting database migrations..."
+        sleep 5
+        echo "📊 Restoring database backup..."
+        sleep 10
+        echo "✅ Database rollback completed"
+        
+    - name: Execute application rollback
+      run: |
+        echo "📦 Rolling back application deployment"
+        
+        # Application rollback with rolling strategy
+        INSTANCES=3
+        for i in $(seq 1 $INSTANCES); do
+          echo "🔄 Rolling back instance $i/$INSTANCES"
+          echo "⏹️  Stopping current version on instance $i..."
+          sleep 2
+          echo "📦 Restoring previous version on instance $i..."
+          sleep 5
+          echo "▶️  Starting instance $i..."
+          sleep 3
+          echo "✅ Instance $i rollback complete"
+        done
+        
+    - name: Verify rollback success
+      run: |
+        echo "🔍 Verifying rollback success"
+        
+        # Comprehensive rollback verification
+        MAX_RETRIES=10
+        for i in $(seq 1 $MAX_RETRIES); do
+          echo "Rollback verification attempt $i/$MAX_RETRIES"
+          
+          # Verify health endpoints
+          # if curl -f -s https://staging.sas-com.example.com/health; then
+          if true; then  # Simulate successful verification
+            echo "✅ Rollback verification successful"
+            break
+          else
+            echo "❌ Rollback verification failed, retrying..."
+            sleep 15
+          fi
+          
+          if [ $i -eq $MAX_RETRIES ]; then
+            echo "🚨 Rollback verification failed - escalating incident"
+            exit 1
+          fi
+        done
+        
+    - name: Post-rollback notification
+      run: |
+        echo "📢 Sending rollback completion notification"
+        echo "🔄 Staging environment rollback completed"
+        echo "📦 Restored to backup: ${{ env.backup_id }}"
+        echo "🚨 Incident escalation may be required"

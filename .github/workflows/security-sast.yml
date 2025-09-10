@@ -1,0 +1,499 @@
+name: SAST Security Analysis
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1'  # 毎週月曜日 2:00 JST
+
+env:
+  SECURITY_REPORT_PATH: security-reports
+  SARIF_UPLOAD: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  # ===== CodeQL Analysis =====
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript', 'python', 'java', 'go']
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better analysis
+        
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: +security-extended,security-and-quality
+        config-file: .github/codeql/codeql-config.yml
+        
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+      
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"
+        output: ${{ env.SECURITY_REPORT_PATH }}/codeql-${{ matrix.language }}.sarif
+        upload: ${{ env.SARIF_UPLOAD }}
+        
+    - name: Upload CodeQL Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: codeql-results-${{ matrix.language }}
+        path: ${{ env.SECURITY_REPORT_PATH }}/codeql-${{ matrix.language }}.sarif
+        retention-days: 30
+
+  # ===== Semgrep Analysis =====
+  semgrep-analysis:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Run Semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+        publishDeployment: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        generateSarif: true
+        config: >-
+          p/security-audit
+          p/owasp-top-ten
+          p/r2c-security-audit
+          p/javascript
+          p/typescript
+          p/python
+          p/java
+          p/golang
+          .semgrep/
+          
+    - name: Upload Semgrep SARIF
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: semgrep.sarif
+        category: semgrep
+        
+    - name: Archive Semgrep Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: semgrep-results
+        path: semgrep.sarif
+        retention-days: 30
+
+  # ===== Language-Specific SAST =====
+  javascript-security:
+    name: JavaScript/TypeScript Security
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '.js') || contains(github.event.head_commit.message, '.ts')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install Dependencies
+      run: |
+        npm ci --only=production
+        npm install --save-dev eslint eslint-plugin-security
+        
+    - name: ESLint Security Plugin
+      run: |
+        cat > .eslintrc.security.json << 'EOF'
+        {
+          "extends": ["plugin:security/recommended"],
+          "plugins": ["security"],
+          "rules": {
+            "security/detect-object-injection": "error",
+            "security/detect-non-literal-regexp": "warn",
+            "security/detect-unsafe-regex": "error",
+            "security/detect-eval-with-expression": "error",
+            "security/detect-non-literal-fs-filename": "warn"
+          }
+        }
+        EOF
+        npx eslint --config .eslintrc.security.json --format json --output-file eslint-security.json . || true
+        
+    - name: NodeJsScan
+      run: |
+        docker run --rm -v $(pwd):/app opensecurity/nodejsscan:latest \
+          -o /app/nodejsscan-report.json /app
+          
+    - name: RetireJS Vulnerability Scan
+      run: |
+        npm install -g retire
+        retire --outputformat json --outputpath retire-report.json || true
+        
+    - name: Upload JavaScript Security Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: javascript-security-results
+        path: |
+          eslint-security.json
+          nodejsscan-report.json
+          retire-report.json
+        retention-days: 30
+
+  python-security:
+    name: Python Security
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '.py')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: Install Security Tools
+      run: |
+        pip install bandit safety pylint
+        
+    - name: Bandit Security Scan
+      run: |
+        bandit -r . -f json -o bandit-report.json \
+          --severity-level medium \
+          --confidence-level medium || true
+          
+    - name: Safety Dependency Check
+      run: |
+        safety check --json > safety-report.json || true
+        
+    - name: Upload Python Security Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-security-results
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
+
+  java-security:
+    name: Java Security
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '.java')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: SpotBugs with FindSecBugs
+      if: fileExists('pom.xml')
+      run: |
+        mvn com.github.spotbugs:spotbugs-maven-plugin:4.8.1.0:spotbugs \
+          -Dspotbugs.effort=Max \
+          -Dspotbugs.threshold=Low \
+          -Dspotbugs.xmlOutput=true \
+          -Dspotbugs.xmlOutputDirectory=./target || true
+          
+    - name: Upload Java Security Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: java-security-results
+        path: target/spotbugsXml.xml
+        retention-days: 30
+
+  go-security:
+    name: Go Security
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '.go')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        cache: true
+        
+    - name: Run Gosec
+      run: |
+        go install github.com/securego/gosec/v2/cmd/gosec@latest
+        gosec -fmt json -out gosec-report.json ./... || true
+        
+    - name: Nancy Dependency Check
+      run: |
+        go list -json -m all | docker run --rm -i sonatypecorp/nancy:latest sleuth \
+          -output json > nancy-report.json || true
+          
+    - name: Upload Go Security Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-security-results
+        path: |
+          gosec-report.json
+          nancy-report.json
+        retention-days: 30
+
+  # ===== Secret Scanning =====
+  secret-scanning:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for secret scanning
+        
+    - name: TruffleHog Secret Scan
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --json --max-depth=50
+        
+    - name: Gitleaks Secret Detection
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Custom Pattern Detection
+      run: |
+        # Check for hardcoded secrets
+        echo "Checking for hardcoded secrets..."
+        
+        # API Keys
+        grep -r "api[_-]key.*=.*['\"].*['\"]" . --include="*.js" --include="*.py" --include="*.java" || true
+        
+        # Passwords
+        grep -r "password.*=.*['\"].*['\"]" . --include="*.js" --include="*.py" --include="*.java" || true
+        
+        # AWS Credentials
+        grep -r "aws_access_key_id.*=.*['\"].*['\"]" . || true
+        grep -r "aws_secret_access_key.*=.*['\"].*['\"]" . || true
+        
+        # Private Keys
+        find . -type f -name "*.pem" -o -name "*.key" -o -name "*.pfx" | head -20
+
+  # ===== Security Report Generation =====
+  generate-security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [codeql-analysis, semgrep-analysis, secret-scanning]
+    if: always()
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: security-artifacts
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Report Dependencies
+      run: |
+        pip install jinja2 pandas plotly markdown
+        
+    - name: Generate Consolidated Report
+      run: |
+        cat > generate_report.py << 'EOF'
+        import json
+        import os
+        from datetime import datetime
+        from pathlib import Path
+        
+        def generate_summary():
+            report = {
+                "timestamp": datetime.now().isoformat(),
+                "repository": os.environ.get("GITHUB_REPOSITORY", "unknown"),
+                "branch": os.environ.get("GITHUB_REF_NAME", "unknown"),
+                "commit": os.environ.get("GITHUB_SHA", "unknown"),
+                "vulnerabilities": {
+                    "critical": 0,
+                    "high": 0,
+                    "medium": 0,
+                    "low": 0
+                },
+                "tools_executed": [],
+                "status": "completed"
+            }
+            
+            # Process all security artifacts
+            artifacts_dir = Path("security-artifacts")
+            if artifacts_dir.exists():
+                for artifact_file in artifacts_dir.rglob("*.sarif"):
+                    report["tools_executed"].append(artifact_file.stem)
+                    # Parse SARIF files for vulnerability counts
+                    try:
+                        with open(artifact_file, 'r') as f:
+                            sarif_data = json.load(f)
+                            for run in sarif_data.get("runs", []):
+                                for result in run.get("results", []):
+                                    level = result.get("level", "note").lower()
+                                    if level == "error":
+                                        report["vulnerabilities"]["high"] += 1
+                                    elif level == "warning":
+                                        report["vulnerabilities"]["medium"] += 1
+                                    else:
+                                        report["vulnerabilities"]["low"] += 1
+                    except:
+                        pass
+            
+            # Write summary
+            with open("security-summary.json", "w") as f:
+                json.dump(report, f, indent=2)
+                
+            # Create markdown summary
+            md_summary = f"""
+        # Security Scan Summary
+        
+        **Date**: {report['timestamp']}  
+        **Repository**: {report['repository']}  
+        **Branch**: {report['branch']}  
+        **Commit**: {report['commit'][:8]}
+        
+        ## Vulnerability Summary
+        
+        | Severity | Count |
+        |----------|-------|
+        | Critical | {report['vulnerabilities']['critical']} |
+        | High     | {report['vulnerabilities']['high']} |
+        | Medium   | {report['vulnerabilities']['medium']} |
+        | Low      | {report['vulnerabilities']['low']} |
+        
+        ## Tools Executed
+        
+        {chr(10).join(f"- {tool}" for tool in report['tools_executed'])}
+        
+        ## Status
+        
+        Security scan {report['status']}
+            """
+            
+            with open("security-summary.md", "w") as f:
+                f.write(md_summary)
+        
+        if __name__ == "__main__":
+            generate_summary()
+        EOF
+        
+        python generate_report.py
+        
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('security-summary.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });
+          
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report
+        path: |
+          security-summary.json
+          security-summary.md
+        retention-days: 90
+        
+    - name: Check Security Thresholds
+      run: |
+        # Parse security summary and check thresholds
+        python3 -c "
+        import json
+        import sys
+        
+        with open('security-summary.json', 'r') as f:
+            report = json.load(f)
+            
+        if report['vulnerabilities']['critical'] > 0:
+            print(f\"❌ Found {report['vulnerabilities']['critical']} critical vulnerabilities\")
+            sys.exit(1)
+        elif report['vulnerabilities']['high'] > 5:
+            print(f\"❌ Found {report['vulnerabilities']['high']} high vulnerabilities (threshold: 5)\")
+            sys.exit(1)
+        else:
+            print('✅ Security scan passed all thresholds')
+        "
+
+  # ===== Security Notifications =====
+  security-notifications:
+    name: Send Security Notifications
+    runs-on: ubuntu-latest
+    needs: [generate-security-report]
+    if: failure()
+    
+    steps:
+    - name: Send Teams Notification
+      if: env.TEAMS_WEBHOOK_URL != ''
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Security Scan Alert",
+          "themeColor": "FF0000",
+          "title": "⚠️ Security Issues Detected",
+          "sections": [{
+            "activityTitle": "Repository: ${{ github.repository }}",
+            "activitySubtitle": "Branch: ${{ github.ref_name }}",
+            "facts": [{
+              "name": "Triggered By",
+              "value": "${{ github.actor }}"
+            }, {
+              "name": "Workflow",
+              "value": "${{ github.workflow }}"
+            }, {
+              "name": "Status",
+              "value": "Failed - Security Issues Found"
+            }]
+          }],
+          "potentialAction": [{
+            "@type": "OpenUri",
+            "name": "View Results",
+            "targets": [{
+              "os": "default",
+              "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }]
+          }]
+        }' $TEAMS_WEBHOOK_URL

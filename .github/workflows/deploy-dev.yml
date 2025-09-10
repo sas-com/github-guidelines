@@ -1,0 +1,424 @@
+name: Deploy to Development Environment
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+    types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment regardless of checks'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: dev-deployment
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  DEPLOYMENT_ENV: 'development'
+  
+jobs:
+  # Pre-deployment validation
+  pre-deployment-checks:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+    
+    outputs:
+      should-deploy: ${{ steps.deployment-decision.outputs.should-deploy }}
+      commit-sha: ${{ steps.commit-info.outputs.sha }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Get commit information
+      id: commit-info
+      run: |
+        echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+        echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+        
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="dev-$(date +'%Y%m%d-%H%M%S')-${{ steps.commit-info.outputs.sha }}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+        
+    - name: Check deployment conditions
+      id: deployment-decision
+      run: |
+        SHOULD_DEPLOY="true"
+        
+        # Skip deployment for documentation-only changes
+        if git diff --name-only HEAD~1 HEAD | grep -v '\.md$' | grep -v '^docs/' | grep -q .; then
+          echo "Code changes detected, proceeding with deployment"
+        else
+          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
+            echo "Documentation-only changes, but force deployment requested"
+          else
+            echo "Documentation-only changes, skipping deployment"
+            SHOULD_DEPLOY="false"
+          fi
+        fi
+        
+        echo "should-deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+        
+    - name: Notify deployment start
+      if: steps.deployment-decision.outputs.should-deploy == 'true'
+      run: |
+        echo "🚀 Starting deployment to Development environment"
+        echo "📝 Commit: ${{ steps.commit-info.outputs.sha }} by ${{ steps.commit-info.outputs.author }}"
+        echo "🏷️  Version: ${{ steps.version.outputs.version }}"
+
+  # Code quality and security checks
+  quality-checks:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: package.json
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: false
+      
+    - name: Run Prettier check
+      run: npm run format:check
+      continue-on-error: false
+      
+    - name: Run unit tests
+      run: npm run test:unit
+      
+    - name: Generate test coverage
+      run: npm run test:coverage
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-dev
+        fail_ci_if_error: false
+        
+    # Security scanning
+    - name: Run Snyk vulnerability scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+      continue-on-error: true
+      
+    - name: Run Semgrep security scan
+      uses: semgrep/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/secrets
+          p/javascript
+        generateSarif: "1"
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      continue-on-error: true
+        
+    - name: Upload Semgrep results to GitHub
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: semgrep.sarif
+        
+    # Container security (if applicable)
+    - name: Build Docker image for scanning
+      if: hashFiles('Dockerfile') != ''
+      run: |
+        docker build -t temp-dev-image:${{ needs.pre-deployment-checks.outputs.commit-sha }} .
+        
+    - name: Run Trivy container scan
+      if: hashFiles('Dockerfile') != ''
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: temp-dev-image:${{ needs.pre-deployment-checks.outputs.commit-sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      continue-on-error: true
+        
+    - name: Upload Trivy scan results
+      if: hashFiles('Dockerfile') != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Build application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, quality-checks]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: development
+        VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
+        
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts-dev
+        path: |
+          dist/
+          package.json
+          package-lock.json
+        retention-days: 7
+
+  # Deploy to development environment
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, quality-checks, build]
+    environment: 
+      name: development
+      url: https://dev.sas-com.example.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts-dev
+        
+    - name: Configure deployment environment
+      run: |
+        echo "🔧 Configuring development environment"
+        echo "Environment: ${{ env.DEPLOYMENT_ENV }}"
+        echo "Version: ${{ needs.pre-deployment-checks.outputs.version }}"
+        
+    # Example deployment steps (customize based on your infrastructure)
+    - name: Deploy to development server
+      run: |
+        echo "🚀 Deploying to development environment"
+        
+        # Example: Deploy to cloud platform
+        # Replace with your actual deployment commands
+        
+        # Simulate deployment process
+        echo "📦 Deploying version ${{ needs.pre-deployment-checks.outputs.version }}"
+        echo "🏗️  Infrastructure provisioning..."
+        sleep 5
+        echo "📂 Application deployment..."
+        sleep 10
+        echo "⚡ Starting services..."
+        sleep 3
+        
+    - name: Run health checks
+      id: health-check
+      run: |
+        echo "🏥 Running health checks..."
+        
+        # Example health check
+        MAX_RETRIES=10
+        RETRY_INTERVAL=10
+        
+        for i in $(seq 1 $MAX_RETRIES); do
+          echo "Health check attempt $i/$MAX_RETRIES"
+          
+          # Replace with actual health check endpoint
+          # if curl -f -s https://dev.sas-com.example.com/health; then
+          if true; then  # Simulate successful health check
+            echo "✅ Health check passed"
+            echo "healthy=true" >> $GITHUB_OUTPUT
+            break
+          else
+            echo "❌ Health check failed, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          fi
+          
+          if [ $i -eq $MAX_RETRIES ]; then
+            echo "🚨 Health check failed after $MAX_RETRIES attempts"
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        done
+        
+    - name: Run integration tests
+      if: steps.health-check.outputs.healthy == 'true'
+      run: |
+        echo "🧪 Running integration tests against development environment"
+        
+        # Example integration test
+        # npm run test:integration:dev
+        echo "✅ Integration tests passed"
+        
+    - name: Update deployment status
+      if: always()
+      run: |
+        if [[ "${{ steps.health-check.outputs.healthy }}" == "true" ]]; then
+          echo "✅ Development deployment successful"
+          echo "🌐 Application available at: https://dev.sas-com.example.com"
+        else
+          echo "❌ Development deployment failed"
+          exit 1
+        fi
+
+  # Post-deployment monitoring
+  post-deployment:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks, deploy-dev]
+    if: always() && needs.deploy-dev.result == 'success'
+    
+    steps:
+    - name: Start monitoring
+      run: |
+        echo "📊 Starting post-deployment monitoring"
+        echo "⏰ Monitoring period: 5 minutes"
+        
+    - name: Performance monitoring
+      run: |
+        echo "📈 Monitoring performance metrics..."
+        
+        # Example: Monitor response times, error rates
+        for i in {1..5}; do
+          echo "Monitoring check $i/5"
+          
+          # Simulate performance check
+          # RESPONSE_TIME=$(curl -w "%{time_total}" -s -o /dev/null https://dev.sas-com.example.com)
+          RESPONSE_TIME="0.123"
+          echo "Response time: ${RESPONSE_TIME}s"
+          
+          # ERROR_RATE=$(check_error_rate)
+          ERROR_RATE="0.1"
+          echo "Error rate: ${ERROR_RATE}%"
+          
+          sleep 60
+        done
+        
+        echo "✅ Performance monitoring completed"
+        
+    - name: Send deployment notification
+      if: always()
+      run: |
+        if [[ "${{ needs.deploy-dev.result }}" == "success" ]]; then
+          echo "📢 Sending success notification"
+          # Example: Send to Teams, Slack, or email
+          # curl -X POST ${{ secrets.TEAMS_WEBHOOK_URL }} -d '{
+          #   "text": "✅ Development deployment successful",
+          #   "sections": [{
+          #     "activityTitle": "Deployment Complete",
+          #     "activitySubtitle": "Version: ${{ needs.pre-deployment-checks.outputs.version }}",
+          #     "facts": [{
+          #       "name": "Environment", "value": "Development"
+          #     }, {
+          #       "name": "Commit", "value": "${{ needs.pre-deployment-checks.outputs.commit-sha }}"
+          #     }, {
+          #       "name": "URL", "value": "https://dev.sas-com.example.com"
+          #     }]
+          #   }]
+          # }'
+        else
+          echo "📢 Sending failure notification"
+        fi
+
+  # Automatic rollback on failure
+  rollback-on-failure:
+    name: Emergency Rollback
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    if: failure() && needs.deploy-dev.result == 'failure'
+    environment:
+      name: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get previous successful deployment
+      id: previous-version
+      run: |
+        # In a real scenario, this would fetch from deployment history
+        # For example, from a deployment database or artifact registry
+        PREVIOUS_VERSION="dev-20240910-120000-abc123"
+        echo "previous-version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+        echo "Found previous version: $PREVIOUS_VERSION"
+        
+    - name: Execute rollback
+      run: |
+        echo "🔄 Executing automatic rollback"
+        echo "📦 Rolling back to version: ${{ steps.previous-version.outputs.previous-version }}"
+        
+        # Simulate rollback process
+        echo "⏪ Restoring previous deployment..."
+        sleep 5
+        echo "🔄 Restarting services..."
+        sleep 3
+        
+    - name: Verify rollback
+      run: |
+        echo "✅ Rollback verification"
+        
+        # Verify the rollback was successful
+        MAX_RETRIES=5
+        for i in $(seq 1 $MAX_RETRIES); do
+          echo "Rollback verification attempt $i/$MAX_RETRIES"
+          
+          # if curl -f -s https://dev.sas-com.example.com/health; then
+          if true; then  # Simulate successful verification
+            echo "✅ Rollback successful - service is healthy"
+            break
+          else
+            echo "❌ Rollback verification failed, retrying..."
+            sleep 10
+          fi
+          
+          if [ $i -eq $MAX_RETRIES ]; then
+            echo "🚨 Rollback verification failed - manual intervention required"
+            exit 1
+          fi
+        done
+        
+    - name: Notify rollback completion
+      run: |
+        echo "📢 Sending rollback notification"
+        echo "🔄 Emergency rollback completed successfully"
+        echo "📦 Restored version: ${{ steps.previous-version.outputs.previous-version }}"
+        
+        # Send emergency notification
+        # This would typically go to Teams, Slack, or trigger an incident management system

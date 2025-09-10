@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "pre-commit": "echo '🔍 Pre-commit validation...'",
+    "prepare-commit-msg": "./scripts/commit-hooks/prepare-commit-msg $1 $2 $3",
+    "commit-msg": "./scripts/commit-hooks/commit-msg $1",
+    "post-commit": "echo '✅ Commit successful! Message validated against SAS conventions.'"
+  }
+}

@@ -1,0 +1,292 @@
+name: PR Checklist Automation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-checks:
+    name: Automated PR Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # コーディング規約チェック
+      - name: Run Linter
+        id: lint
+        run: |
+          npm ci
+          npm run lint --if-present
+        continue-on-error: true
+
+      # セキュリティスキャン
+      - name: Security Scan - Secrets Detection
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+
+      # 依存関係の脆弱性チェック
+      - name: Dependency Vulnerability Check
+        id: deps-check
+        run: |
+          npm audit --audit-level=moderate
+        continue-on-error: true
+
+      # テストカバレッジチェック
+      - name: Run Tests with Coverage
+        id: test
+        run: |
+          npm test --if-present -- --coverage
+        continue-on-error: true
+
+      # コード品質メトリクス
+      - name: Code Quality Metrics
+        id: quality
+        run: |
+          echo "## 📊 Code Quality Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ファイル変更統計
+          echo "### 📈 Change Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- Files changed: $(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines added: $(git diff --stat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | tail -1 | awk '{print $4}')" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines deleted: $(git diff --stat ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | tail -1 | awk '{print $6}')" >> $GITHUB_STEP_SUMMARY
+
+      # PR種別の自動判定
+      - name: Detect PR Type
+        id: pr-type
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          if [[ "$PR_TITLE" =~ ^feat|^feature ]]; then
+            echo "pr_type=feature" >> $GITHUB_OUTPUT
+            echo "🚀 **PR Type: Feature**" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$PR_TITLE" =~ ^fix|^bugfix ]]; then
+            echo "pr_type=bugfix" >> $GITHUB_OUTPUT
+            echo "🐛 **PR Type: Bugfix**" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$PR_TITLE" =~ ^hotfix ]]; then
+            echo "pr_type=hotfix" >> $GITHUB_OUTPUT
+            echo "🔥 **PR Type: Hotfix**" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$PR_TITLE" =~ ^refactor ]]; then
+            echo "pr_type=refactor" >> $GITHUB_OUTPUT
+            echo "♻️ **PR Type: Refactoring**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "pr_type=other" >> $GITHUB_OUTPUT
+            echo "📋 **PR Type: Other**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # チェックリスト確認状況
+      - name: Checklist Validation
+        id: checklist
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          # チェックボックスのカウント
+          TOTAL_CHECKS=$(echo "$PR_BODY" | grep -c "\- \[" || true)
+          CHECKED=$(echo "$PR_BODY" | grep -c "\- \[x\]" || true)
+          
+          echo "## ✅ Checklist Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Total items: $TOTAL_CHECKS" >> $GITHUB_STEP_SUMMARY
+          echo "- Completed: $CHECKED" >> $GITHUB_STEP_SUMMARY
+          echo "- Remaining: $((TOTAL_CHECKS - CHECKED))" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $TOTAL_CHECKS -gt 0 ]; then
+            PERCENTAGE=$((CHECKED * 100 / TOTAL_CHECKS))
+            echo "- Completion: ${PERCENTAGE}%" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # 自動チェック結果のコメント作成
+      - name: Create Check Results Comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // 既存の自動チェックコメントを検索
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('## 🤖 Automated PR Check Results')
+            );
+            
+            // チェック結果の作成
+            let checkResults = `## 🤖 Automated PR Check Results\n\n`;
+            checkResults += `### 📋 PR Type: ${{ steps.pr-type.outputs.pr_type }}\n\n`;
+            
+            // 各チェックの結果
+            checkResults += `### ✅ Automated Checks\n`;
+            checkResults += `- Linting: ${{ steps.lint.outcome == 'success' && '✅ Passed' || '⚠️ Failed' }}\n`;
+            checkResults += `- Security Scan: ✅ Completed\n`;
+            checkResults += `- Dependency Check: ${{ steps.deps-check.outcome == 'success' && '✅ No vulnerabilities' || '⚠️ Vulnerabilities found' }}\n`;
+            checkResults += `- Tests: ${{ steps.test.outcome == 'success' && '✅ All tests passed' || '⚠️ Some tests failed' }}\n`;
+            
+            checkResults += `\n### 📊 Metrics\n`;
+            checkResults += `See [workflow summary](https://github.com/${owner}/${repo}/actions/runs/${{ github.run_id }}) for detailed metrics.\n`;
+            
+            checkResults += `\n### 📚 Resources\n`;
+            checkResults += `- [PR Review Guidelines](/PR_REVIEW_GUIDELINES.md)\n`;
+            checkResults += `- [PR Review Checklist](/PR_REVIEW_CHECKLIST.md)\n`;
+            
+            if (botComment) {
+              // 既存のコメントを更新
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: botComment.id,
+                body: checkResults
+              });
+            } else {
+              // 新しいコメントを作成
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: checkResults
+              });
+            }
+
+  pr-size-label:
+    name: Add PR Size Label
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Calculate PR Size and Add Label
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // PR情報を取得
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+            
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const changes = additions + deletions;
+            
+            // サイズに基づくラベルを決定
+            let sizeLabel = '';
+            if (changes <= 50) {
+              sizeLabel = 'size/XS';
+            } else if (changes <= 200) {
+              sizeLabel = 'size/S';
+            } else if (changes <= 500) {
+              sizeLabel = 'size/M';
+            } else if (changes <= 1000) {
+              sizeLabel = 'size/L';
+            } else {
+              sizeLabel = 'size/XL';
+            }
+            
+            // 既存のサイズラベルを削除
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner,
+              repo,
+              issue_number: prNumber,
+            });
+            
+            const sizeLabels = labels.filter(label => label.name.startsWith('size/'));
+            for (const label of sizeLabels) {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number: prNumber,
+                name: label.name,
+              }).catch(() => {});
+            }
+            
+            // 新しいサイズラベルを追加
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: prNumber,
+              labels: [sizeLabel],
+            }).catch(() => {});
+
+  review-assignment:
+    name: Auto-assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    
+    steps:
+      - name: Auto-assign reviewers based on PR type
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prTitle = context.payload.pull_request.title;
+            
+            // PR種別に基づくレビュアーの決定
+            let reviewers = [];
+            
+            if (prTitle.includes('security') || prTitle.includes('auth')) {
+              // セキュリティ関連の変更
+              reviewers.push('security-team');
+            }
+            
+            if (prTitle.includes('api') || prTitle.includes('endpoint')) {
+              // API変更
+              reviewers.push('backend-team');
+            }
+            
+            if (prTitle.includes('ui') || prTitle.includes('frontend')) {
+              // UI変更
+              reviewers.push('frontend-team');
+            }
+            
+            if (prTitle.includes('hotfix') || prTitle.includes('critical')) {
+              // 緊急修正
+              reviewers.push('senior-engineers');
+            }
+            
+            // レビュアーの割り当て（存在するユーザー/チームのみ）
+            if (reviewers.length > 0) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  team_reviewers: reviewers.filter(r => r.includes('team')),
+                  reviewers: reviewers.filter(r => !r.includes('team')),
+                });
+              } catch (error) {
+                console.log('Could not assign some reviewers:', error.message);
+              }
+            }

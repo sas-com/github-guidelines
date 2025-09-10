@@ -1,0 +1,198 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "plugins": ["@commitlint/plugin-max-line-length"],
+  "parserPreset": {
+    "parserOpts": {
+      "headerPattern": "^(\\w*)(?:\\(([\\w\\$\\.\\-\\* ]*)\\))?(!?)?: (.*)$",
+      "headerCorrespondence": ["type", "scope", "breaking", "subject"],
+      "referenceActions": [
+        "close", "closes", "closed",
+        "fix", "fixes", "fixed",
+        "resolve", "resolves", "resolved",
+        "refs"
+      ],
+      "issuePrefixes": ["#"],
+      "noteKeywords": ["BREAKING CHANGE", "BREAKING-CHANGE"],
+      "fieldPattern": "^-(.*?)-$",
+      "revertPattern": "^Revert\\s\"([\\s\\S]*)\"\\s*This reverts commit (\\w*)\\.?$",
+      "revertCorrespondence": ["header", "hash"],
+      "warn": false,
+      "mergePattern": null,
+      "mergeCorrespondence": null
+    }
+  },
+  "rules": {
+    "body-leading-blank": [2, "always"],
+    "body-max-line-length": [2, "always", 100],
+    "footer-leading-blank": [2, "always"],
+    "footer-max-line-length": [2, "always", 100],
+    "header-max-length": [2, "always", 72],
+    "header-min-length": [2, "always", 10],
+    "scope-case": [2, "always", "lower-case"],
+    "scope-empty": [0],
+    "scope-enum": [1, "always", [
+      "auth", "api", "ui", "db", "payment", "notification",
+      "user", "product", "order", "admin", "config", "core",
+      "header", "sidebar", "modal", "form", "table", "chart",
+      "webpack", "eslint", "jest", "docker", "k8s", "helm",
+      "dev", "staging", "prod", "test", "ci", "cd",
+      "readme", "docs", "changelog", "setup", "guide",
+      "security", "perf", "analytics", "monitoring", "logging"
+    ]],
+    "subject-case": [0],
+    "subject-empty": [2, "never"],
+    "subject-full-stop": [2, "never", "."],
+    "type-case": [2, "always", "lower-case"],
+    "type-empty": [2, "never"],
+    "type-enum": [2, "always", [
+      "feat",
+      "fix", 
+      "docs",
+      "style",
+      "refactor",
+      "test",
+      "chore",
+      "security",
+      "perf",
+      "build",
+      "ci",
+      "revert",
+      "hotfix"
+    ]],
+    "references-empty": [0],
+    "signed-off-by": [0]
+  },
+  "prompt": {
+    "questions": {
+      "type": {
+        "description": "コミットの種類を選択してください:",
+        "enum": {
+          "feat": {
+            "description": "新機能の追加",
+            "title": "Features",
+            "emoji": "✨"
+          },
+          "fix": {
+            "description": "バグ修正",
+            "title": "Bug Fixes", 
+            "emoji": "🐛"
+          },
+          "docs": {
+            "description": "ドキュメント変更のみ",
+            "title": "Documentation",
+            "emoji": "📚"
+          },
+          "style": {
+            "description": "フォーマット変更（動作に影響なし）",
+            "title": "Styles",
+            "emoji": "💎"
+          },
+          "refactor": {
+            "description": "リファクタリング",
+            "title": "Code Refactoring",
+            "emoji": "📦"
+          },
+          "test": {
+            "description": "テストの追加・修正",
+            "title": "Tests",
+            "emoji": "🚨"
+          },
+          "chore": {
+            "description": "ビルドプロセス・補助ツールの変更",
+            "title": "Chores",
+            "emoji": "♻️"
+          },
+          "security": {
+            "description": "セキュリティ関連の修正",
+            "title": "Security",
+            "emoji": "🔒"
+          },
+          "perf": {
+            "description": "パフォーマンス改善",
+            "title": "Performance Improvements",
+            "emoji": "🚀"
+          },
+          "build": {
+            "description": "ビルドシステム変更",
+            "title": "Builds",
+            "emoji": "🛠"
+          },
+          "ci": {
+            "description": "CI設定変更",
+            "title": "Continuous Integrations",
+            "emoji": "⚙️"
+          },
+          "revert": {
+            "description": "コミットの取り消し",
+            "title": "Reverts",
+            "emoji": "🗑"
+          },
+          "hotfix": {
+            "description": "緊急修正",
+            "title": "Hotfixes",
+            "emoji": "🚑"
+          }
+        }
+      },
+      "scope": {
+        "description": "変更の影響範囲を入力してください（任意）:"
+      },
+      "customScope": {
+        "description": "カスタムスコープを入力してください:"
+      },
+      "subject": {
+        "description": "変更内容を簡潔に説明してください（命令形、最大72文字）:"
+      },
+      "body": {
+        "description": "詳細な変更内容を入力してください（任意）。複数行可能、各行最大100文字:"
+      },
+      "breaking": {
+        "description": "破壊的変更はありますか？"
+      },
+      "breakingBody": {
+        "description": "BREAKING CHANGE の詳細を説明してください:"
+      },
+      "footer": {
+        "description": "クローズするIssueやその他の参照を入力してください（任意）:"
+      },
+      "confirmCommit": {
+        "description": "このコミットでよろしいですか？"
+      }
+    },
+    "settings": {
+      "enableMultipleScopes": false,
+      "scopeEnumSeparator": ",",
+      "customScopesAlign": "bottom",
+      "customScopesAlias": "custom",
+      "emptyScopesAlias": "empty",
+      "upperCaseSubject": false,
+      "breaklineChar": "|",
+      "skipQuestions": [],
+      "issuePrefixes": [
+        {
+          "value": "closes",
+          "name": "closes:   ISSUES are closed by this change"
+        },
+        {
+          "value": "fixes", 
+          "name": "fixes:    ISSUES are fixed by this change"
+        }
+      ],
+      "customIssuePrefixAlign": "top",
+      "emptyIssuePrefixAlias": "skip",
+      "customIssuePrefixAlias": "custom",
+      "allowCustomIssuePrefix": true,
+      "allowEmptyIssuePrefix": true,
+      "confirmColorize": true,
+      "maxHeaderLength": 72,
+      "maxSubjectLength": 72,
+      "minSubjectLength": 10,
+      "scopeOverrides": undefined,
+      "defaultBody": "",
+      "defaultIssues": "",
+      "defaultScope": "",
+      "defaultSubject": ""
+    }
+  },
+  "helpUrl": "https://github.com/conventional-changelog/commitlint/#what-is-commitlint"
+}
