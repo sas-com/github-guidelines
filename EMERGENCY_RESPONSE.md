@@ -228,18 +228,22 @@ git rebase dev  # または merge
 ### 緊急修正フロー
 
 ```mermaid
-graph TD
-    A[本番障害発生] --> B{緊急度判定}
-    B -->|L1-L2| C[Hotfix開始]
-    B -->|L3-L4| D[通常フロー]
-    C --> E[現在:dev / 将来:mainからブランチ作成]
-    E --> F[修正実施]
-    F --> G[最小限のテスト]
-    G --> H[緊急PR作成]
-    H --> I[優先レビュー]
-    I --> J[現在:dev / 将来:mainへマージ]
-    J --> K[デプロイ]
-    K --> L[他環境へバックポート(将来)]
+flowchart TD
+    A["本番障害発生"] --> B{"緊急度判定"}
+    B -->|L1-L2| C["Hotfix開始"]
+    B -->|L3-L4| D["通常フロー"]
+    C --> E["現在:dev / 将来:mainから<br/>ブランチ作成"]
+    E --> F["修正実施"]
+    F --> G["最小限のテスト"]
+    G --> H["緊急PR作成"]
+    H --> I["優先レビュー"]
+    I --> J["現在:dev / 将来:mainへ<br/>マージ"]
+    J --> K["デプロイ"]
+    K --> L["他環境へ<br/>バックポート(将来)"]
+    
+    style A fill:#ff6b6b
+    style C fill:#ffa502
+    style K fill:#26de81
 ```
 
 ### Hotfixコマンド

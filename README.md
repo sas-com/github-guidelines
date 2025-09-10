@@ -100,12 +100,12 @@
 ### コミットメッセージ規約
 
 ```
-<type>(<scope>): <subject>
+<type>(<scope>): <subject> (#Issue番号)
 
 例：
-feat(auth): ログイン機能を実装
-fix(api): ユーザー検索のバグを修正
-docs(readme): インストール手順を更新
+feat(auth): ログイン機能を実装 (#123)
+fix(api): ユーザー検索のバグを修正 (#456)
+docs(readme): インストール手順を更新 (#789)
 ```
 
 ### ブランチ構成
