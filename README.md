@@ -11,25 +11,9 @@
 
 ---
 
-## 🚀 SAS Git Flow - 統合ブランチ戦略
-
-### 新しいブランチ戦略の導入
-エス・エー・エス株式会社では、あらゆる開発プロジェクトに対応できる統合ブランチ戦略「SAS Git Flow」を導入します。
-
-| ドキュメント | 対象者 | 概要 |
-|------------|--------|------|
-| **[SAS Git Flow実装仕様書](./docs/workflow/SAS_FLOW_SPECIFICATION.md)** | 全開発者・アーキテクト | 技術仕様と設計原則 |
-| **[ブランチ管理ルール](./docs/workflow/BRANCH_MANAGEMENT_RULES.md)** | 全開発者・リーダー | ブランチ命名規則・保護設定 |
-| **[CI/CDワークフロー設計](./docs/cicd/CICD_WORKFLOW_DESIGN.md)** | DevOps・インフラ担当 | 自動化パイプライン設計 |
-| **[運用手順書](./docs/workflow/SAS_FLOW_OPERATIONS_GUIDE.md)** | 全開発者・運用チーム | 日常業務・緊急対応手順 |
-| **[教育・導入計画](./docs/workflow/SAS_FLOW_EDUCATION_PLAN.md)** | PM・人事・管理職 | チーム教育・段階的導入 |
-
-**導入開始**: 2025年9月10日〜（8週間の段階的移行）  
-**対象**: 全開発チーム（Web/モバイル/API/ライブラリ/ドキュメントプロジェクト）
-
----
-
 ## 📚 対象者別ドキュメントガイド
+
+適切なドキュメントを見つけやすくするため、対象者別にガイドを整理しています。
 
 ### 🆕 新規参画者の方
 
@@ -47,6 +31,7 @@
 |--------|------------|------|
 | 高 | **[クイックリファレンス](./docs/reference/QUICK_REFERENCE.md)** | よく使うコマンドと操作の簡易マニュアル（日常業務で活用） |
 | 高 | **[開発チーム向けガイド](./docs/team/TEAM_CUSTOMIZATION_DEV.md)** 🆕 | 開発者専用のワークフローと自動化 |
+| 中 | **[ブランチ管理ルール](./docs/workflow/BRANCH_MANAGEMENT_RULES.md)** | ブランチ命名規則・保護設定 |
 | 中 | **[統合ガイドライン](./docs/overview/MASTER_GITHUB_GUIDELINES.md)** 🆕 | GitHub運用の包括的ガイド（必要時に参照） |
 | 中 | **[緊急時対応マニュアル](./docs/reference/EMERGENCY_RESPONSE.md)** | インシデント発生時の対応手順 |
 
@@ -57,6 +42,7 @@
 | 高 | **[統合ガイドライン](./docs/overview/MASTER_GITHUB_GUIDELINES.md)** 🆕 | GitHub運用の包括的ガイド（全体管理） |
 | 高 | **[Issue/Project管理ガイド](./docs/management/ISSUE_PROJECT_MANAGEMENT_GUIDE.md)** 🆕 | Issue管理とProject Board運用 |
 | 高 | **[実装サマリー](./docs/overview/IMPLEMENTATION_SUMMARY.md)** 🆕 | 統合システムの全体像とROI分析 |
+| 高 | **[ブランチ管理ルール](./docs/workflow/BRANCH_MANAGEMENT_RULES.md)** | ブランチ戦略と命名規則 |
 | 中 | **[プロジェクト別ガイドライン作成マニュアル](./docs/onboarding/PROJECT_GUIDELINE_TEMPLATE.md)** | 各プロジェクト固有ガイドラインの作成手順 |
 
 ### 🤝 クライアント様
@@ -127,19 +113,19 @@ fix(api): ユーザー検索のバグを修正 (#456)
 docs(readme): インストール手順を更新 (#789)
 ```
 
-### ブランチ構成
+### ブランチ戦略（SAS Git Flow）
 
 ```
-main        # 本番環境（今後構築予定）
-staging     # ステージング環境（今後構築予定）
-dev         # 開発環境（現在運用中）
+main        # 本番環境
+staging     # ステージング環境
+dev         # 開発環境
 
-feature/[機能名]  # 新機能開発
-bugfix/[説明]     # バグ修正
-hotfix/[説明]     # 緊急修正
+feature/[component]/[機能名]  # 新機能開発
+bugfix/[component]/[説明]     # バグ修正
+hotfix/[component]/[説明]     # 緊急修正
 ```
 
-**※現在の運用**: dev環境のみ運用中。devブランチで開発作業を実施。**強制プッシュは厳禁**。
+詳細は **[ブランチ管理ルール](./docs/workflow/BRANCH_MANAGEMENT_RULES.md)** を参照。
 
 ### 優先度ラベル
 
