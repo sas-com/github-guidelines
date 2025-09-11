@@ -1,18 +1,19 @@
-# SAS Flow 実装仕様書
+# SAS Git Flow 実装仕様書
 
 **エス・エー・エス株式会社**  
-**マイクロサービス環境向けブランチ戦略**
+**統合ブランチ戦略 - あらゆる開発プロジェクト対応**
 
 ## 1. 概要
 
-### 1.1 SAS Flowとは
-GitLab Flowをベースとしたエス・エー・エス株式会社のマイクロサービス環境に最適化されたハイブリッドブランチ戦略です。
+### 1.1 SAS Git Flowとは
+GitLab FlowとGitHub Flowのベストプラクティスを統合したエス・エー・エス株式会社の統合ブランチ戦略です。Web アプリケーション、モバイルアプリ、API サービス、ライブラリ、ドキュメントプロジェクトなど、あらゆる開発プロジェクトに対応できる柔軟性を持ちます。
 
 ### 1.2 設計原則
-- **独立性**: マイクロサービスの独立したリリースサイクルを確保
+- **汎用性**: あらゆる技術スタック・プロジェクト規模に対応
 - **安全性**: 強制プッシュ禁止、段階的環境昇格による品質保証
-- **俊敏性**: 緊急時（L1-L4）レベル別対応フローによる迅速な障害復旧
-- **拡張性**: 将来的なサービス増加に対応できるアーキテクチャ
+- **俊敏性**: 緊急時（L1-L4）レベル別対応フローによる迅速な問題解決
+- **拡張性**: チーム規模やプロジェクト複雑度の変化に柔軟に対応
+- **簡潔性**: 学習コストを抑えた直感的なワークフロー
 
 ## 2. アーキテクチャ設計
 
@@ -59,31 +60,41 @@ main (本番環境)
 └── tags/v1.2.0
 ```
 
-### 2.3 マイクロサービス管理戦略
+### 2.3 プロジェクト管理戦略
 
-#### 2.3.1 サービス分類
-- **Core Services**: 基幹業務システム（高可用性要求）
-- **Platform Services**: 共通基盤サービス（認証、ログ等）
-- **Business Services**: 業務特化サービス
-- **Edge Services**: API Gateway、プロキシ等
+#### 2.3.1 プロジェクトタイプ別対応
+- **モノリシックアプリケーション**: 単一リポジトリでの機能ベース管理
+- **ライブラリ/パッケージ**: バージョン管理とAPI互換性保持
+- **Web/モバイルアプリ**: フロントエンド・UIコンポーネント管理
+- **APIサービス**: エンドポイントベース管理
+- **マイクロサービス**: サービス単位での独立デプロイ管理
+- **ドキュメントプロジェクト**: コンテンツベース管理
 
-#### 2.3.2 依存関係管理
+#### 2.3.2 依存関係管理（プロジェクトタイプ別）
 ```yaml
-# dependency-matrix.yaml
-services:
-  user-service:
+# dependency-config.yaml
+project_types:
+  monolith:
     dependencies:
-      - auth-service: ">=2.1.0"
-      - notification-service: ">=1.5.0"
-    dependents:
-      - order-service
-      - profile-service
+      - framework: ">=3.0.0"
+      - database: ">=5.7.0"
+    components:
+      - frontend
+      - backend
+      - database
   
-  order-service:
+  library:
     dependencies:
-      - user-service: ">=3.0.0"
-      - payment-service: ">=2.3.0"
-      - inventory-service: ">=1.8.0"
+      - runtime: ">=16.0.0"
+    peer_dependencies:
+      - react: ">=17.0.0"
+    
+  microservice:
+    dependencies:
+      - shared-library: ">=1.5.0"
+    service_dependencies:
+      - auth-service
+      - config-service
 ```
 
 ## 3. 実装詳細
@@ -91,28 +102,37 @@ services:
 ### 3.1 ブランチ命名規則
 ```
 # 機能開発
-feature/[service-name]/[feature-description]
-例: feature/user-service/add-profile-validation
+feature/[component]/[feature-description]
+例: 
+  - feature/auth/add-profile-validation      # モノリス・API
+  - feature/ui/implement-dark-mode          # Web・モバイル
+  - feature/api/add-user-endpoints          # ライブラリ・API
+  - feature/docs/update-installation-guide  # ドキュメント
 
-# 共通ライブラリ
-feature/shared/[library-name]-[description]
-例: feature/shared/logging-library-update
+# 共通・横断的機能
+feature/shared/[description]
+例: feature/shared/logging-framework-update
 
 # バグ修正
-bugfix/[service-name]/[issue-description]
-例: bugfix/payment-service/timeout-handling
+bugfix/[component]/[issue-description]
+例: 
+  - bugfix/frontend/login-form-validation
+  - bugfix/api/timeout-handling
+  - bugfix/docs/broken-links
 
 # 緊急修正
-hotfix/[severity]/[service-name]/[issue-id]
-例: hotfix/critical/auth-service/SAS-2024-001
+hotfix/[severity]/[component]/[issue-id]
+例: 
+  - hotfix/critical/auth/SAS-2024-001
+  - hotfix/high/ui/performance-issue
 
 # リリース準備
 release/v[major].[minor].[patch]
 例: release/v2.1.0
 
-# 統合テスト用
-integration/[purpose]-[date]
-例: integration/batch-deployment-20250910
+# 実験・検証用
+experiment/[purpose]-[date]
+例: experiment/performance-test-20250910
 ```
 
 ### 3.2 マージ戦略
@@ -172,10 +192,10 @@ protection_rules:
 
 ## 4. CI/CD統合
 
-### 4.1 パイプライン設計
+### 4.1 パイプライン設計（プロジェクトタイプ別）
 ```yaml
-# .github/workflows/sas-flow.yml
-name: SAS Flow Pipeline
+# .github/workflows/sas-git-flow.yml
+name: SAS Git Flow Pipeline
 
 on:
   push:
@@ -184,38 +204,49 @@ on:
     branches: [dev, staging, main]
 
 jobs:
+  # 共通バリデーション
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Project Type Detection
+        run: ./scripts/detect-project-type.sh
       - name: Dependency Validation
         run: ./scripts/validate-dependencies.sh
       
+  # プロジェクトタイプ別テスト
   test:
     needs: validate
     strategy:
       matrix:
-        environment: [unit, integration, e2e]
+        test_type: [unit, integration, e2e, lint, docs]
     runs-on: ubuntu-latest
     steps:
       - name: Run Tests
-        run: ./scripts/run-tests.sh ${{ matrix.environment }}
+        run: ./scripts/run-tests.sh ${{ matrix.test_type }}
   
+  # セキュリティスキャン
   security:
     needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Security Scan
         run: ./scripts/security-scan.sh
+      - name: Dependency Audit
+        run: ./scripts/audit-dependencies.sh
   
+  # プロジェクトタイプ別デプロイ
   deploy:
     needs: [test, security]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Production Deploy
-        run: ./scripts/deploy.sh production
+      - name: Deploy Application
+        run: ./scripts/deploy.sh
+      - name: Update Documentation
+        if: contains(github.event.head_commit.modified, 'docs/')
+        run: ./scripts/deploy-docs.sh
 ```
 
 ### 4.2 環境別デプロイメント戦略

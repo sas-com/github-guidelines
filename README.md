@@ -11,21 +11,21 @@
 
 ---
 
-## 🚀 SAS Flow - マイクロサービス向けブランチ戦略
+## 🚀 SAS Git Flow - 統合ブランチ戦略
 
 ### 新しいブランチ戦略の導入
-エス・エー・エス株式会社では、マイクロサービス環境に最適化された新しいブランチ戦略「SAS Flow」を導入します。
+エス・エー・エス株式会社では、あらゆる開発プロジェクトに対応できる統合ブランチ戦略「SAS Git Flow」を導入します。
 
 | ドキュメント | 対象者 | 概要 |
 |------------|--------|------|
-| **[SAS Flow実装仕様書](./docs/workflow/SAS_FLOW_SPECIFICATION.md)** | 全開発者・アーキテクト | 技術仕様と設計原則 |
+| **[SAS Git Flow実装仕様書](./docs/workflow/SAS_FLOW_SPECIFICATION.md)** | 全開発者・アーキテクト | 技術仕様と設計原則 |
 | **[ブランチ管理ルール](./docs/workflow/BRANCH_MANAGEMENT_RULES.md)** | 全開発者・リーダー | ブランチ命名規則・保護設定 |
 | **[CI/CDワークフロー設計](./docs/cicd/CICD_WORKFLOW_DESIGN.md)** | DevOps・インフラ担当 | 自動化パイプライン設計 |
 | **[運用手順書](./docs/workflow/SAS_FLOW_OPERATIONS_GUIDE.md)** | 全開発者・運用チーム | 日常業務・緊急対応手順 |
 | **[教育・導入計画](./docs/workflow/SAS_FLOW_EDUCATION_PLAN.md)** | PM・人事・管理職 | チーム教育・段階的導入 |
 
 **導入開始**: 2025年9月10日〜（8週間の段階的移行）  
-**対象**: 全マイクロサービス開発チーム（20名）
+**対象**: 全開発チーム（Web/モバイル/API/ライブラリ/ドキュメントプロジェクト）
 
 ---
 

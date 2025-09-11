@@ -1,7 +1,7 @@
 # ブランチ管理ルール
 
 **エス・エー・エス株式会社**  
-**SAS Flow対応ブランチ管理・保護設定**
+**SAS Git Flow対応ブランチ管理・保護設定**
 
 ## 1. ブランチ管理体系
 
@@ -27,43 +27,48 @@ dev (開発環境ブランチ)
 
 #### 1.2.1 機能開発ブランチ
 ```
-feature/[service-name]/[feature-description]
+feature/[component]/[feature-description]
 
 命名規則:
-- service-name: マイクロサービス名（ケバブケース）
+- component: コンポーネント名（ケバブケース）
 - feature-description: 機能説明（動詞-名詞形式）
 
-例:
-✅ feature/user-service/add-profile-validation
-✅ feature/payment-service/implement-refund-api
-✅ feature/shared/update-logging-framework
-❌ feature/UserService/AddProfile (大文字使用)
-❌ feature/user/profile (service-name不明確)
+プロジェクトタイプ別例:
+✅ feature/auth/add-profile-validation        # API/モノリシック
+✅ feature/ui/implement-dark-mode             # Web/モバイル
+✅ feature/api/add-user-endpoints            # ライブラリ
+✅ feature/docs/update-installation-guide    # ドキュメント
+✅ feature/shared/update-common-utils        # 共通コンポーネント
+❌ feature/UserAuth/AddProfile (大文字使用)
+❌ feature/user/profile (component不明確)
 ```
 
 #### 1.2.2 バグ修正ブランチ
 ```
-bugfix/[service-name]/[issue-description]
+bugfix/[component]/[issue-description]
 
-例:
-✅ bugfix/order-service/fix-inventory-calculation
-✅ bugfix/auth-service/resolve-token-expiry
-❌ fix/order-service/inventory (prefixが不適切)
+プロジェクトタイプ別例:
+✅ bugfix/frontend/fix-login-form-validation   # Web/モバイル
+✅ bugfix/api/resolve-timeout-issue            # API/モノリシック
+✅ bugfix/docs/fix-broken-links                # ドキュメント
+✅ bugfix/build/fix-webpack-config             # ビルドシステム
+❌ fix/frontend/login (prefixが不適切)
 ```
 
 #### 1.2.3 緊急修正ブランチ
 ```
-hotfix/[severity]/[service-name]/[issue-id]
+hotfix/[severity]/[component]/[issue-id]
 
 severity レベル:
-- critical: サービス停止、データ消失
-- high: 機能不全、セキュリティ問題  
-- medium: パフォーマンス劣化
-- low: 軽微な不具合
+- critical: アプリケーション停止、データ消失、セキュリティ侵害
+- high: 主要機能不全、パフォーマンス問題  
+- medium: 一部機能の障害、UI/UX問題
+- low: 軽微な不具合、ドキュメント修正
 
-例:
-✅ hotfix/critical/payment-service/SAS-2024-001
-✅ hotfix/high/auth-service/CVE-2024-001
+プロジェクトタイプ別例:
+✅ hotfix/critical/auth/SAS-2024-001          # 認証系緊急修正
+✅ hotfix/high/ui/performance-issue           # UIパフォーマンス問題
+✅ hotfix/medium/docs/security-disclosure     # ドキュメント修正
 ```
 
 #### 1.2.4 リリース準備ブランチ
@@ -264,30 +269,55 @@ echo "*.md merge=ours" >> .gitattributes
 
 ## 4. コードオーナー設定
 
-### 4.1 CODEOWNERS ファイル
+### 4.1 CODEOWNERS ファイル（プロジェクトタイプ別）
 ```bash
 # /CODEOWNERS
 
 # Global rules
 * @sas-com/github-admin-team
 
-# Service-specific rules
-/services/user-service/ @sas-com/user-service-team
-/services/payment-service/ @sas-com/payment-team
-/services/order-service/ @sas-com/order-team
+# Web/Mobile Application
+/src/components/ @sas-com/frontend-team
+/src/pages/ @sas-com/frontend-team
+/public/ @sas-com/frontend-team
+/mobile/ @sas-com/mobile-team
 
-# Shared components
-/shared/libraries/ @sas-com/platform-team
-/shared/configs/ @sas-com/devops-team
+# API/Backend
+/src/api/ @sas-com/backend-team
+/src/controllers/ @sas-com/backend-team
+/src/services/ @sas-com/backend-team
+/src/models/ @sas-com/backend-team
 
-# Infrastructure
+# Library/Package
+/lib/ @sas-com/library-maintainers
+/dist/ @sas-com/library-maintainers
+package.json @sas-com/library-maintainers
+
+# Microservices (if applicable)
+/services/ @sas-com/service-team
+/microservices/ @sas-com/service-team
+
+# Shared/Common
+/shared/ @sas-com/platform-team
+/common/ @sas-com/platform-team
+/utils/ @sas-com/platform-team
+
+# Configuration & Infrastructure
+/config/ @sas-com/devops-team
 /infrastructure/ @sas-com/devops-team
 /k8s/ @sas-com/devops-team
 /.github/ @sas-com/github-admin-team
+/docker/ @sas-com/devops-team
 
 # Database
 /migrations/ @sas-com/database-team
 /schemas/ @sas-com/database-team
+/sql/ @sas-com/database-team
+
+# Testing
+/tests/ @sas-com/qa-team
+/e2e/ @sas-com/qa-team
+/__tests__/ @sas-com/qa-team
 
 # Security
 /security/ @sas-com/security-team
@@ -295,7 +325,8 @@ echo "*.md merge=ours" >> .gitattributes
 
 # Documentation
 /docs/ @sas-com/tech-writers
-README.md @sas-com/tech-writers
+/README.md @sas-com/tech-writers
+/CHANGELOG.md @sas-com/tech-writers
 ```
 
 ### 4.2 チーム権限マトリクス
