@@ -103,6 +103,158 @@
 
 ---
 
+## 🚀 新規参画者向けセットアップフロー
+
+新規参画者の方が効率的にプロジェクトに参加できるよう、段階的なセットアップフローを整備しています。
+
+```mermaid
+flowchart TD
+    %% スタート
+    START([新規参画開始]) --> CHECK{WSL2環境<br/>確認}
+    
+    %% 環境構築フェーズ（Day 1-2: 約3-4時間）
+    CHECK -->|Windows使用| WSL2[WSL2インストール<br/>⏱️ 30分]
+    CHECK -->|Mac/Linux使用| GIT_SETUP[Git環境セットアップ<br/>⏱️ 15分]
+    
+    WSL2 --> GIT_SETUP
+    GIT_SETUP --> GITHUB_ACCOUNT[GitHubアカウント作成<br/>⏱️ 20分]
+    GITHUB_ACCOUNT --> TWO_FA[2FA設定<br/>⏱️ 10分]
+    TWO_FA --> SSH_KEY[SSH鍵生成・登録<br/>⏱️ 15分]
+    SSH_KEY --> CONNECTION_TEST[接続テスト<br/>⏱️ 5分]
+    
+    CONNECTION_TEST --> ENV_CHECK{環境構築<br/>完了確認}
+    ENV_CHECK -->|NG| TROUBLESHOOT[トラブルシューティング<br/>📞 サポート連絡]
+    TROUBLESHOOT --> ENV_CHECK
+    ENV_CHECK -->|OK| ORG_INVITE
+    
+    %% 組織参加フェーズ（Day 2: 約1時間）
+    ORG_INVITE[Organization招待<br/>⏱️ 15分] --> TEAM_ASSIGN[チーム配属確認<br/>⏱️ 15分]
+    TEAM_ASSIGN --> DOCS_READ[基本ドキュメント確認<br/>⏱️ 30分]
+    
+    %% 学習フェーズ（Day 3-5: 約8-10時間）
+    DOCS_READ --> SKILL_CHECK{GitHub経験<br/>レベル確認}
+    
+    SKILL_CHECK -->|初心者| BASIC_TRAINING[Git基礎トレーニング<br/>⏱️ 3-4時間]
+    SKILL_CHECK -->|経験者| RULE_STUDY[社内ルール学習<br/>⏱️ 1-2時間]
+    
+    BASIC_TRAINING --> PRACTICE_REPO[練習リポジトリ<br/>実習<br/>⏱️ 2時間]
+    PRACTICE_REPO --> PR_PRACTICE[PR作成練習<br/>⏱️ 1時間]
+    PR_PRACTICE --> CONFLICT_PRACTICE[コンフリクト解決<br/>練習<br/>⏱️ 1時間]
+    CONFLICT_PRACTICE --> RULE_STUDY
+    
+    %% ルール理解フェーズ
+    RULE_STUDY --> COMMIT_RULES[コミットメッセージ<br/>規約理解<br/>⏱️ 30分]
+    COMMIT_RULES --> BRANCH_STRATEGY[ブランチ戦略<br/>理解<br/>⏱️ 30分]
+    BRANCH_STRATEGY --> SECURITY_RULES[セキュリティルール<br/>確認<br/>⏱️ 30分]
+    
+    %% プロジェクト参加フェーズ（Week 2: 約4-6時間）
+    SECURITY_RULES --> PROJECT_ASSIGN[プロジェクト<br/>アサイン通知]
+    PROJECT_ASSIGN --> REPO_ACCESS[リポジトリ<br/>アクセス権限付与]
+    REPO_ACCESS --> REPO_CLONE[プロジェクト<br/>リポジトリクローン<br/>⏱️ 15分]
+    REPO_CLONE --> DEV_ENV[開発環境構築<br/>⏱️ 1-2時間]
+    
+    DEV_ENV --> ENV_TEST{開発環境<br/>動作確認}
+    ENV_TEST -->|NG| DEV_SUPPORT[開発環境<br/>サポート依頼]
+    DEV_SUPPORT --> DEV_ENV
+    ENV_TEST -->|OK| MENTOR_ASSIGN
+    
+    %% メンタリングフェーズ（Week 2-3）
+    MENTOR_ASSIGN[メンター配属<br/>⏱️ 30分] --> FIRST_ISSUE[初回Issue割り当て<br/>⏱️ 1時間]
+    FIRST_ISSUE --> TASK_UNDERSTAND[要件理解・<br/>質問<br/>⏱️ 30分]
+    TASK_UNDERSTAND --> FIRST_DEVELOPMENT[初回開発実装<br/>⏱️ 2-4時間]
+    FIRST_DEVELOPMENT --> FIRST_PR[初回PR作成<br/>⏱️ 30分]
+    FIRST_PR --> CODE_REVIEW[コードレビュー<br/>対応<br/>⏱️ 1-2時間]
+    
+    CODE_REVIEW --> REVIEW_OK{レビュー<br/>承認}
+    REVIEW_OK -->|修正要求| FIX_CODE[修正対応<br/>⏱️ 1時間]
+    FIX_CODE --> CODE_REVIEW
+    REVIEW_OK -->|承認| MERGE_PR[PRマージ<br/>⏱️ 5分]
+    
+    %% 独立作業移行フェーズ（Week 3-4）
+    MERGE_PR --> SECOND_TASK[第2回タスク<br/>アサイン]
+    SECOND_TASK --> INDEPENDENT_CHECK{独立作業<br/>可能判定}
+    INDEPENDENT_CHECK -->|要継続| MENTOR_CONTINUE[メンタリング継続]
+    MENTOR_CONTINUE --> SECOND_TASK
+    INDEPENDENT_CHECK -->|OK| INDEPENDENT_WORK[独立作業移行]
+    
+    %% 完了フェーズ
+    INDEPENDENT_WORK --> ONBOARD_COMPLETE[🎉 オンボーディング<br/>完了]
+    ONBOARD_COMPLETE --> REGULAR_DEV[通常開発業務<br/>開始]
+    
+    %% エラーハンドリング・サポート
+    TROUBLESHOOT --> SUPPORT_CONTACT[📞 SAS Github管理チーム<br/>github@sas-com.com]
+    DEV_SUPPORT --> SUPPORT_CONTACT
+    
+    %% スタイリング
+    classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef milestone fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef support fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000
+    classDef timeBox fill:#f1f8e9,stroke:#558b2f,stroke-width:1px,color:#000
+    
+    class START,ONBOARD_COMPLETE,REGULAR_DEV startEnd
+    class WSL2,GIT_SETUP,GITHUB_ACCOUNT,TWO_FA,SSH_KEY,CONNECTION_TEST,ORG_INVITE,TEAM_ASSIGN,DOCS_READ,BASIC_TRAINING,PRACTICE_REPO,PR_PRACTICE,CONFLICT_PRACTICE,RULE_STUDY,COMMIT_RULES,BRANCH_STRATEGY,SECURITY_RULES,PROJECT_ASSIGN,REPO_ACCESS,REPO_CLONE,DEV_ENV,MENTOR_ASSIGN,FIRST_ISSUE,TASK_UNDERSTAND,FIRST_DEVELOPMENT,FIRST_PR,CODE_REVIEW,FIX_CODE,MERGE_PR,SECOND_TASK,INDEPENDENT_WORK process
+    class CHECK,ENV_CHECK,SKILL_CHECK,ENV_TEST,REVIEW_OK,INDEPENDENT_CHECK decision
+    class ONBOARD_COMPLETE milestone
+    class TROUBLESHOOT,DEV_SUPPORT,SUPPORT_CONTACT,MENTOR_CONTINUE support
+```
+
+### 📊 フェーズ別完了目安時間
+
+| フェーズ | 期間 | 累計作業時間 | 主要成果物 |
+|----------|------|-------------|------------|
+| **環境構築** | Day 1-2 | 3-4時間 | WSL2/Git/GitHub環境 |
+| **基礎学習** | Day 3-5 | 8-12時間 | Git操作スキル習得 |
+| **ルール理解** | Day 5 | 1-2時間 | 社内規約理解 |
+| **プロジェクト参加** | Week 2 | 4-6時間 | 開発環境完成 |
+| **メンタリング** | Week 2-3 | 8-10時間 | 初回PR完了 |
+| **独立移行** | Week 3-4 | 継続 | 独立作業開始 |
+
+### 🎯 各フェーズの成功基準
+
+#### 環境構築完了
+- ✅ SSH接続でGitHubにアクセス可能
+- ✅ WSL2環境でGitコマンドが正常動作
+- ✅ 2FA認証が有効
+- ✅ Organization参加完了
+
+#### 基礎学習完了
+- ✅ 基本Gitコマンドを覚えている
+- ✅ 練習リポジトリでPR作成経験
+- ✅ コンフリクト解決ができる
+- ✅ 社内コミット規約を理解
+
+#### プロジェクト参加完了
+- ✅ プロジェクトリポジトリのクローン
+- ✅ 開発環境の正常動作確認
+- ✅ メンターとのコミュニケーション確立
+- ✅ 初回タスクの内容理解
+
+#### 独立作業移行
+- ✅ 独立してPR作成・レビュー対応
+- ✅ Issue内容の理解と実装
+- ✅ トラブル時の適切なエスカレーション
+- ✅ チーム開発フローの習得
+
+### 📞 各段階でのサポート体制
+
+| 段階 | 主要サポート | 連絡先 | 対応内容 |
+|------|-------------|--------|----------|
+| 環境構築 | **SAS Github管理チーム** | github@sas-com.com | 技術的トラブルシューティング |
+| 学習・ルール理解 | **メンター** | チーム内 | Git操作・社内ルール説明 |
+| プロジェクト参加 | **プロジェクトリーダー** | プロジェクト内 | 開発環境・業務理解 |
+| 独立移行 | **メンター** | チーム内 | 継続的な技術指導 |
+
+### 🔗 関連ドキュメント
+
+- **詳細手順**: [オンボーディングガイド](./docs/onboarding/ONBOARDING.md)
+- **環境構築**: [GitHub環境構築ガイド](./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md)
+- **開発ルール**: [統合ガイドライン](./docs/overview/MASTER_GITHUB_GUIDELINES.md)
+- **クイックリファレンス**: [コマンド早見表](./docs/reference/QUICK_REFERENCE.md)
+
+---
+
 ## 🔑 基本原則
 
 ### 1. セキュリティファースト
