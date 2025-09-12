@@ -131,6 +131,128 @@ Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*
 # Microsoft-Windows-Subsystem-Linux     Disabled  ← これらをEnabledにする必要
 ```
 
+#### Windows機能の有効化手順
+
+上記のコマンドで **Disabled** と表示された機能がある場合、以下の手順で有効化してください。
+
+##### 方法1: PowerShellで有効化（推奨）
+
+**PowerShellを管理者として実行**し、以下のコマンドを順番に実行：
+
+```powershell
+# 1. Linux用Windowsサブシステム機能を有効化
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -All -NoRestart
+
+# 2. 仮想マシンプラットフォーム機能を有効化
+Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All -NoRestart
+
+# 3. 有効化の確認
+Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
+
+# 4. 両方が "State : Enabled" になっていることを確認
+```
+
+##### 方法2: DISMコマンドで有効化
+
+```powershell
+# 1. Linux用Windowsサブシステム機能を有効化
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# 2. 仮想マシンプラットフォーム機能を有効化
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# 3. 操作成功メッセージを確認
+# "The operation completed successfully." と表示されれば成功
+```
+
+##### 方法3: GUIで有効化（コントロールパネル）
+
+1. **Windows機能の有効化または無効化**を開く
+   - `Win + R` キーを押して「`optionalfeatures`」と入力してEnter
+   - または コントロールパネル → プログラムと機能 → Windowsの機能の有効化または無効化
+
+2. **以下の機能にチェックを入れる**：
+   - ✅ **Linux 用 Windows サブシステム** (Windows Subsystem for Linux)
+   - ✅ **仮想マシン プラットフォーム** (Virtual Machine Platform)
+   - ✅ **Hyper-V**（表示される場合のみ、Windows 10 Pro/Enterprise）
+
+3. **OKボタン**をクリック
+
+4. **変更の適用**
+   - 「Windowsの機能」ダイアログで進行状況を確認
+   - 完了後「今すぐ再起動」または「後で再起動」を選択
+
+##### 機能有効化の確認
+
+**有効化後の確認方法：**
+
+```powershell
+# 詳細な状態確認
+Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*" -or $_.FeatureName -like "*Virtual*"} | Format-Table FeatureName, State -AutoSize
+
+# 期待される出力：
+# FeatureName                           State
+# -----------                           -----
+# VirtualMachinePlatform                Enabled  ← Enabledになっている
+# Microsoft-Windows-Subsystem-Linux     Enabled  ← Enabledになっている
+```
+
+##### 機能有効化でエラーが発生した場合
+
+**エラー例と対処法：**
+
+###### エラー: 0x800F081F
+```powershell
+# エラーメッセージ：
+# "The source files could not be found"
+
+# 解決方法：
+# 1. インターネット接続を確認
+# 2. Windows Updateを最新に更新
+dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /LimitAccess
+
+# 3. それでも失敗する場合、Windows 10のISOファイルを指定
+# dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /source:D:\sources\sxs
+```
+
+###### エラー: "管理者権限が必要"
+```powershell
+# 解決方法：
+# 1. PowerShellを右クリック → "管理者として実行"
+# 2. UAC（ユーザーアカウント制御）で「はい」をクリック
+# 3. プロンプトが "PS C:\Windows\system32>" になっていることを確認
+```
+
+###### エラー: "機能が見つからない"
+```powershell
+# 解決方法：Windows Updateで最新の状態にする
+# 1. 設定 → 更新とセキュリティ → Windows Update
+# 2. 「更新プログラムのチェック」をクリック
+# 3. すべての更新を適用後、PCを再起動
+# 4. 再度機能の有効化を試行
+```
+
+#### 必須：再起動の実行
+
+**重要：機能有効化後は必ずPCを再起動してください**
+
+```powershell
+# コマンドで再起動する場合
+Restart-Computer
+
+# 手動で再起動する場合
+# スタートメニュー → 電源 → 再起動
+```
+
+#### 各機能の役割と必要性
+
+| 機能名 | 役割 | WSL2での必要性 |
+|-------|------|----------------|
+| **Microsoft-Windows-Subsystem-Linux** | Linux環境の基盤を提供 | 必須 - これがないとLinuxが動作しない |
+| **VirtualMachinePlatform** | 仮想マシンの実行基盤 | 必須 - WSL2は軽量仮想マシン技術を使用 |
+| **Hyper-V** | 高度な仮想化機能 | 任意 - ただし有効化により性能向上 |
+
 #### 4. WSLの現在の状態確認
 
 ```powershell
