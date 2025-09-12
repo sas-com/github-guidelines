@@ -668,11 +668,11 @@ sudo yum install -y git
 
 ```bash
 # ========== 基本情報設定 ==========
-# 名前（日本語可）
-git config --global user.name "山田 太郎"
+# 名前（英語推奨：国際チーム連携、ASCII互換性、GitHub表示最適化のため）
+git config --global user.name "Taro Yamada"
 
-# メールアドレス（会社用）
-git config --global user.email "yamada@sas-com.co.jp"
+# メールアドレス（会社用、標準ドメイン使用）
+git config --global user.email "yamada@sas-com.com"
 
 # ========== エディタ設定 ==========
 # VS Code を使用する場合
@@ -695,6 +695,45 @@ git config --global color.ui auto
 # ========== 設定確認 ==========
 git config --global --list
 ```
+
+#### 📋 設定ガイドラインと標準化について
+
+**名前設定（user.name）について：**
+- ✅ **英語名を強く推奨**：国際チーム連携、ASCII互換性、GitHub表示最適化
+- ✅ **推奨パターン**：
+  ```bash
+  # 良い例
+  git config --global user.name "Taro Yamada"
+  git config --global user.name "Hanako Sato"
+  git config --global user.name "Kenji Tanaka"
+  ```
+- ⚠️ **使用可能だが推奨しない**：
+  ```bash
+  # 日本語名（表示問題やファイル名競合の可能性）
+  git config --global user.name "山田 太郎"
+  ```
+
+**メールアドレス（user.email）について：**
+- ✅ **標準ドメイン**: `@sas-com.com` を使用
+- ✅ **推奨パターン**：
+  ```bash
+  # 良い例
+  git config --global user.email "yamada@sas-com.com"
+  git config --global user.email "tanaka@sas-com.com"
+  git config --global user.email "sato.hanako@sas-com.com"
+  ```
+- ❌ **使用禁止**：
+  ```bash
+  # 古いドメイン（統一性のため使用禁止）
+  git config --global user.email "yamada@sas-com.co.jp"
+  
+  # 個人用アドレス（セキュリティポリシー違反）
+  git config --global user.email "yamada@gmail.com"
+  ```
+
+**設定の理由：**
+- **English名**: GitHubでの表示、国際チーム連携、文字エンコーディング問題回避
+- **標準ドメイン**: セキュリティポリシー統一、管理体制の一元化、将来的なシステム統合
 
 ---
 
@@ -740,7 +779,7 @@ git config --global alias.lg "log --graph --oneline --all"
    | 項目 | 入力内容 | 推奨例 |
    |------|----------|--------|
    | **Username** | 英数字とハイフン | taro-yamada |
-   | **Email** | 会社メールアドレス | yamada@sas-com.co.jp |
+   | **Email** | 会社メールアドレス | yamada@sas-com.com |
    | **Password** | 15文字以上 | 大小英数字記号を含む |
 
 4. **メール認証**
@@ -832,8 +871,8 @@ git config --global alias.lg "log --graph --oneline --all"
 **WSL2/Mac/Linuxで実行：**
 
 ```bash
-# SSH鍵を生成（メールアドレスは自分のものに変更）
-ssh-keygen -t ed25519 -C "yamada@sas-com.co.jp"
+# SSH鍵を生成（メールアドレスは自分のものに変更、標準ドメイン使用）
+ssh-keygen -t ed25519 -C "yamada@sas-com.com"
 
 # 以下が表示されたらEnterを3回押す
 # Enter file in which to save the key: [Enter]
