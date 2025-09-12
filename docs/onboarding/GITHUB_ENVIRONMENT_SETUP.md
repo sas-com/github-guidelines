@@ -90,9 +90,9 @@ graph TB
     SSH --> Org[組織参加]
     Org --> Complete([完了])
     
-    style Start fill:#90EE90
-    style Complete fill:#90EE90
-    style TwoFA fill:#FFB6C1
+    style Start fill:#90EE90,color:#000
+    style Complete fill:#90EE90,color:#000
+    style TwoFA fill:#FFB6C1,color:#000
 ```
 
 ### 📝 作業の依存関係
@@ -295,8 +295,8 @@ flowchart TD
     Check3 -->|はい| Method2
     Check3 -->|いいえ| Method1
     
-    style Method1 fill:#90EE90
-    style Method2 fill:#87CEEB
+    style Method1 fill:#90EE90,color:#000
+    style Method2 fill:#87CEEB,color:#000
 ```
 
 ---
