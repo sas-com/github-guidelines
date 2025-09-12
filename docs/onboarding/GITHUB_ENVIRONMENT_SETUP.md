@@ -22,6 +22,7 @@
    - 事前確認事項
    - インストール方法の選択
    - セットアップ手順
+   - Windows Terminal活用（強く推奨）
    - トラブルシューティング
 
 4. **[🔧 第2章: Git環境の構築](#-第2章-git環境の構築)**
@@ -414,6 +415,201 @@ Restart-Computer
 ```
 
 </details>
+
+---
+
+### 1.6 Windows Terminal の活用（強く推奨）
+
+> 💡 **Windows Terminal について**  
+> Windows Terminal は Microsoft が開発した新しいターミナルアプリケーションで、PowerShell と WSL2 の両方で優れた体験を提供します。
+
+#### 📊 Windows Terminal の利点
+
+| 従来のツール | Windows Terminal |
+|--------------|------------------|
+| コマンドプロンプト | ✅ **タブ機能**で複数セッション管理 |
+| PowerShell ISE | ✅ **Unicode完全サポート**（日本語表示） |
+| 個別ウィンドウ | ✅ **統合環境**（PowerShell + WSL2） |
+| 限定的なカスタマイズ | ✅ **豊富なテーマ**とフォント設定 |
+| コピペが不便 | ✅ **Ctrl+C/V**で直感的操作 |
+
+#### 🎯 なぜ Windows Terminal が必要か
+
+**開発効率の向上：**
+- **タブ管理**: PowerShell、Ubuntu（WSL2）、Git Bashを1つのウィンドウで切り替え
+- **分割ペイン**: 画面を分割してコマンドとログを同時表示
+- **フォント改善**: Cascadia Code フォントで読みやすいコード表示
+
+**Git作業の最適化：**
+- WSL2とPowerShellを瞬時に切り替え
+- 複数のリポジトリを並行作業
+- ログ出力の見やすさが大幅改善
+
+#### 📥 インストール方法
+
+**方法A: Microsoft Store（推奨）**
+
+1. **Microsoft Store を開く**
+2. **「Windows Terminal」** で検索
+3. **入手/インストール** をクリック
+
+**方法B: GitHub から直接ダウンロード**
+
+```powershell
+# PowerShellで直接ダウンロード（最新版）
+# 1. GitHubリリースページにアクセス
+# https://github.com/microsoft/terminal/releases
+
+# 2. Assets から .msixbundle をダウンロード
+# Microsoft.WindowsTerminal_Win10_1.18.xxx.0_8wekyb3d8bbwe.msixbundle
+
+# 3. ダブルクリックでインストール
+```
+
+**方法C: Winget（パッケージマネージャ）**
+
+```powershell
+# PowerShellで実行
+winget install --id Microsoft.WindowsTerminal -e
+```
+
+#### ⚙️ 基本設定（Git/WSL2最適化）
+
+**設定ファイルの場所:**
+```
+Ctrl + , で設定画面を開く
+または
+%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
+```
+
+**推奨設定項目:**
+
+```json
+{
+  "defaultProfile": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+  "profiles": {
+    "defaults": {
+      "fontFace": "Cascadia Code",
+      "fontSize": 11,
+      "cursorShape": "bar",
+      "colorScheme": "One Half Dark"
+    },
+    "list": [
+      {
+        "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+        "name": "Ubuntu",
+        "source": "Windows.Terminal.Wsl",
+        "startingDirectory": "//wsl$/Ubuntu/home/yourname"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "command": { "action": "copy", "singleLine": false },
+      "keys": "ctrl+c"
+    },
+    {
+      "command": "paste",
+      "keys": "ctrl+v"
+    }
+  ]
+}
+```
+
+#### 🚀 効率的な使い方
+
+**ショートカット一覧:**
+
+| 操作 | ショートカット | 用途 |
+|------|---------------|------|
+| **新しいタブ** | `Ctrl + Shift + T` | 新しいシェルセッション |
+| **タブ切り替え** | `Ctrl + Tab` | 開いているタブ間を移動 |
+| **ペイン分割** | `Alt + Shift + D` | 画面を縦または横に分割 |
+| **コピー** | `Ctrl + C` | 選択したテキストをコピー |
+| **ペースト** | `Ctrl + V` | クリップボードから貼り付け |
+| **検索** | `Ctrl + Shift + F` | 出力内容を検索 |
+
+**実践的な活用例:**
+
+```bash
+# タブ1: メインの作業用WSL2
+cd ~/projects/my-repo
+git status
+
+# タブ2: ログ監視用
+tail -f /var/log/application.log
+
+# タブ3: PowerShellでWindowsツール実行
+# Windows側のファイル管理など
+
+# 分割ペイン: Git操作とファイル編集を同時表示
+# 左ペイン: git log --oneline
+# 右ペイン: code ./README.md
+```
+
+#### 🎨 テーマとカスタマイズ
+
+**人気のテーマ:**
+- **One Half Dark** (暗いテーマ、目に優しい)
+- **Campbell Powershell** (PowerShell標準)
+- **Solarized Dark** (コーディング向け)
+
+**フォント推奨:**
+- **Cascadia Code** (Microsoft製、プログラミング最適化)
+- **JetBrains Mono** (読みやすさ重視)
+- **Fira Code** (リガチャ対応)
+
+#### 🔧 トラブルシューティング
+
+<details>
+<summary>🔧 WSL2が表示されない</summary>
+
+**解決方法:**
+1. Windows Terminal を再起動
+2. WSL2が正しくインストールされているか確認
+3. 設定 → プロファイルを追加 → WSL を選択
+</details>
+
+<details>
+<summary>🔧 日本語が文字化けする</summary>
+
+**解決方法:**
+```json
+{
+  "profiles": {
+    "defaults": {
+      "fontFace": "Cascadia Code",
+      "experimental.retroTerminalEffect": false
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary>🔧 コピー＆ペーストができない</summary>
+
+**解決方法:**
+1. 設定 → アクション でキーバインドを確認
+2. 右クリックメニューを使用
+3. 選択時は `Ctrl+C`、貼り付けは `Ctrl+V`
+</details>
+
+#### 💡 Windows Terminal 活用のメリット
+
+**開発作業での実感:**
+- Git操作の快適性が格段に向上
+- 複数プロジェクトの並行作業が簡単
+- ログの確認とコマンド実行を同時に可能
+- Windows環境とLinux環境の統合感
+
+**チーム作業での利点:**
+- 画面共有時の見やすさ
+- 統一された作業環境
+- トラブルシューティング効率の向上
+
+> 📝 **次のステップ**  
+> Windows Terminal の設定が完了したら、[第2章: Git環境の構築](#-第2章-git環境の構築) に進んでください。
 
 ---
 
