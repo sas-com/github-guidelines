@@ -129,6 +129,7 @@ Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*
 # -----------                           -----
 # VirtualMachinePlatform                Disabled  ← これらをEnabledにする必要
 # Microsoft-Windows-Subsystem-Linux     Disabled  ← これらをEnabledにする必要
+# HyperV-KernelInt-VirtualDevice        Disabled  ← 任意（詳細は下記参照）
 ```
 
 #### Windows機能の有効化手順
@@ -173,9 +174,10 @@ dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /nores
    - または コントロールパネル → プログラムと機能 → Windowsの機能の有効化または無効化
 
 2. **以下の機能にチェックを入れる**：
-   - ✅ **Linux 用 Windows サブシステム** (Windows Subsystem for Linux)
-   - ✅ **仮想マシン プラットフォーム** (Virtual Machine Platform)
-   - ✅ **Hyper-V**（表示される場合のみ、Windows 10 Pro/Enterprise）
+   - ✅ **Linux 用 Windows サブシステム** (Windows Subsystem for Linux) **※必須**
+   - ✅ **仮想マシン プラットフォーム** (Virtual Machine Platform) **※必須**
+   - ⬜ **Hyper-V**（表示される場合のみ、Windows 10 Pro/Enterprise）**※任意**
+   - ⬜ **HyperV-KernelInt-VirtualDevice**（表示される場合）**※任意、通常は無効のまま**
 
 3. **OKボタン**をクリック
 
@@ -196,6 +198,7 @@ Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*
 # -----------                           -----
 # VirtualMachinePlatform                Enabled  ← Enabledになっている
 # Microsoft-Windows-Subsystem-Linux     Enabled  ← Enabledになっている
+# HyperV-KernelInt-VirtualDevice        Disabled ← Disabled/Enabledどちらでもよい
 ```
 
 ##### 機能有効化でエラーが発生した場合
@@ -247,11 +250,58 @@ Restart-Computer
 
 #### 各機能の役割と必要性
 
-| 機能名 | 役割 | WSL2での必要性 |
-|-------|------|----------------|
-| **Microsoft-Windows-Subsystem-Linux** | Linux環境の基盤を提供 | 必須 - これがないとLinuxが動作しない |
-| **VirtualMachinePlatform** | 仮想マシンの実行基盤 | 必須 - WSL2は軽量仮想マシン技術を使用 |
-| **Hyper-V** | 高度な仮想化機能 | 任意 - ただし有効化により性能向上 |
+| 機能名 | 役割 | WSL2での必要性 | 説明 |
+|-------|------|----------------|------|
+| **Microsoft-Windows-Subsystem-Linux** | Linux環境の基盤を提供 | **必須** | これがないとLinuxが動作しない |
+| **VirtualMachinePlatform** | 仮想マシンの実行基盤 | **必須** | WSL2は軽量仮想マシン技術を使用 |
+| **HyperV-KernelInt-VirtualDevice** | Hyper-Vカーネル統合仮想デバイス | **任意** | 仮想化パフォーマンス向上、通常は無効のまま |
+| **Hyper-V** | 高度な仮想化機能 | **任意** | Pro/Enterprise版のみ、有効化により性能向上 |
+
+#### HyperV-KernelInt-VirtualDevice について
+
+**概要：**
+- Windows 10/11のHyper-V仮想化基盤と連携する統合仮想デバイス機能
+- WSL2とは直接関係がないが、システム全体の仮想化パフォーマンスに影響する可能性
+- 主にHyper-V仮想マシンや高度な仮想化機能で使用される
+
+**WSL2での影響：**
+```markdown
+✅ Disabled（無効）のまま使用する場合：
+- WSL2は正常に動作する
+- 一般的な開発作業には影響なし
+- システムリソースの消費が少ない
+
+✅ Enabled（有効）にした場合：
+- WSL2は正常に動作する
+- 仮想化パフォーマンスがわずかに向上する可能性
+- システムリソースをわずかに消費
+```
+
+**有効化の判断基準：**
+
+| 環境 | 推奨設定 | 理由 |
+|------|----------|------|
+| **一般的な開発環境** | Disabled | 不要、リソース節約 |
+| **Hyper-V使用環境** | Enabled | パフォーマンス向上 |
+| **Docker Desktop使用** | Disabled | 競合の可能性を回避 |
+| **仮想化ソフト併用** | Disabled | 他の仮想化ソフトとの競合回避 |
+
+**有効化する場合の手順：**
+```powershell
+# PowerShell（管理者）で実行
+Enable-WindowsOptionalFeature -Online -FeatureName HyperV-KernelInt-VirtualDevice -All -NoRestart
+
+# 確認
+Get-WindowsOptionalFeature -Online -FeatureName HyperV-KernelInt-VirtualDevice
+
+# PC再起動
+Restart-Computer
+```
+
+**⚠️ 注意事項：**
+- VMware WorkstationやVirtualBoxなど他の仮想化ソフトウェアと競合する可能性
+- 問題が発生した場合は無効化して再起動
+- WSL2の動作には直接影響しないため、問題があれば無効のまま使用
 
 #### 4. WSLの現在の状態確認
 
@@ -1008,6 +1058,24 @@ ssh -vT git@github.com
 chmod 600 ~/.ssh/id_ed25519
 chmod 644 ~/.ssh/id_ed25519.pub
 chmod 700 ~/.ssh
+```
+
+#### HyperV-KernelInt-VirtualDeviceについて質問される場合
+```markdown
+質問：
+「Get-WindowsOptionalFeature」のコマンド実行時に
+HyperV-KernelInt-VirtualDeviceが表示されるが、これは何か？
+
+回答：
+- Hyper-Vカーネル統合仮想デバイス機能
+- WSL2の動作には直接関係ない
+- 通常はDisabled（無効）のままで問題なし
+- 有効化したい場合は上記の詳細説明を参照
+
+対処：
+- WSL2を使うだけなら無視してOK
+- 有効化によるパフォーマンス向上は限定的
+- 問題が発生したら無効化して再起動
 ```
 
 #### 組織に参加できない
