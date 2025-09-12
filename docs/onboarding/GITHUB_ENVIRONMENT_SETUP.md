@@ -63,50 +63,322 @@ Windows 環境での WSL2 セットアップから、Git の初期設定、GitHu
 Windows Subsystem for Linux 2（WSL2）は、Windows上でLinux環境を動作させる仕組みです。
 開発において Bash コマンドや Linux ツールを使用するため、Windows 環境では必須となります。
 
-### システム要件
+---
 
+### 🔍 事前確認（重要）
+
+**WSL2のインストールを開始する前に、以下の項目を必ず確認してください。**
+これらの確認を怠ると、エラー 0x80370114 などのインストールエラーが発生する可能性があります。
+
+#### 1. システム要件の確認
+
+PowerShell を**管理者として実行**し、以下のコマンドで確認：
+
+```powershell
+# Windows バージョンの確認
+[System.Environment]::OSVersion.Version
+
+# 出力例（Windows 10 version 2004以降が必要）：
+# Major  Minor  Build  Revision
+# -----  -----  -----  --------
+# 10     0      19041  0
+
+# または、より詳細な情報を確認
+winver
+# ポップアップウィンドウで「バージョン 2004」以降であることを確認
+```
+
+**必要要件：**
 - ✅ Windows 10 バージョン 2004以降（ビルド 19041以降）
 - ✅ Windows 11（全バージョン対応）
+- ✅ x64 システム（64ビット版Windows）
 
-### インストール手順
+#### 2. 仮想化機能の確認（最重要）
+
+```powershell
+# タスクマネージャーで確認（最も簡単）
+# 1. Ctrl + Shift + Esc でタスクマネージャーを開く
+# 2. 「パフォーマンス」タブ → 「CPU」を選択
+# 3. 右下に「仮想化: 有効」と表示されていることを確認
+
+# PowerShellコマンドで確認
+Get-ComputerInfo | Select-Object HyperV*
+
+# 出力例（仮想化が有効な場合）：
+# HyperVRequirementDataExecutionPreventionAvailable       : True
+# HyperVRequirementSecondLevelAddressTranslation          : True
+# HyperVRequirementVirtualizationFirmwareEnabled          : True  ← これがTrueである必要
+# HyperVRequirementVMMonitorModeExtensions                : True
+```
+
+**⚠️ 仮想化が無効の場合：**
+1. PCを再起動し、起動時にBIOS/UEFI設定に入る（通常F2、F10、DelキーなどでBIOS画面へ）
+2. 以下の設定を探して有効化：
+   - Intel CPU: "Intel Virtualization Technology (VT-x)" を Enabled に
+   - AMD CPU: "SVM Mode" または "AMD-V" を Enabled に
+3. 設定を保存してPCを再起動
+
+#### 3. Windows機能の状態確認
+
+```powershell
+# 必要なWindows機能の状態を確認
+Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*" -or $_.FeatureName -like "*Virtual*"} | Select-Object FeatureName, State
+
+# 出力例：
+# FeatureName                           State
+# -----------                           -----
+# VirtualMachinePlatform                Disabled  ← これらをEnabledにする必要
+# Microsoft-Windows-Subsystem-Linux     Disabled  ← これらをEnabledにする必要
+```
+
+#### 4. WSLの現在の状態確認
+
+```powershell
+# WSLがインストール済みか確認
+wsl --status
+
+# エラーが出る場合はWSL未インストール
+# 正常な場合は現在のWSL情報が表示される
+```
+
+---
+
+### 📦 インストール手順
 
 #### 方法1: 簡単インストール（推奨）
 
-PowerShell を**管理者として実行**し、以下のコマンドを入力：
+**前提条件を全て満たしている場合**、PowerShell を**管理者として実行**し、以下のコマンドを入力：
 
 ```powershell
-# WSL2とUbuntuを一括インストール
+# WSL2と既定のディストリビューション（Ubuntu）を一括インストール
 wsl --install
 
-# インストール完了後、PCを再起動
-# 再起動後、自動的にUbuntuのセットアップが開始されます
-```
+# 特定のディストリビューションを指定する場合：
+# wsl --install -d <ディストリビューション名>
+# 例: wsl --install -d Debian
 
-#### 方法2: 手動インストール（上記がエラーになる場合）
-
-1. **Windows機能の有効化**（PowerShell管理者で実行）：
-
-```powershell
-# WSL機能を有効化
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-
-# 仮想マシン機能を有効化
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+# インストール完了後、以下のメッセージが表示されます：
+# "The requested operation is successful. Changes will not be effective until the system is rebooted."
 
 # PCを再起動（必須）
 Restart-Computer
+
+# 再起動後、自動的に選択したディストリビューションのセットアップが開始されます
 ```
 
-2. **再起動後、WSL2を既定バージョンに設定**：
+> 💡 **ヒント**: `wsl --install`のみ実行した場合、既定でUbuntuがインストールされます。プロジェクトで別のディストリビューションが必要な場合は、`-d`オプションで明示的に指定してください。
+
+#### 方法2: 手動インストール（方法1でエラーが発生する場合）
+
+**ステップ1: 必要なWindows機能を個別に有効化**
+
+PowerShell を**管理者として実行**：
 
 ```powershell
+# 1. Windows Subsystem for Linux機能を有効化
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# 2. 仮想マシンプラットフォーム機能を有効化（重要）
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# 3. 有効化を確認
+Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
+
+# 両方が "State: Enabled" になっていることを確認
+
+# 4. PCを再起動（必須 - 機能を有効にするため）
+Restart-Computer
+```
+
+**ステップ2: WSL2カーネルの更新**
+
+再起動後、PowerShell を**管理者として実行**：
+
+```powershell
+# WSLカーネルを最新版に更新
+wsl --update
+
+# WSL2を既定バージョンに設定
 wsl --set-default-version 2
 ```
 
-3. **Microsoft StoreからUbuntuをインストール**：
-   - Microsoft Storeを開く
-   - 「Ubuntu」または「Ubuntu 22.04 LTS」で検索
-   - インストールボタンをクリック
+**ステップ3: Linuxディストリビューションのインストール**
+
+> ⚠️ **重要**: 本ガイドではUbuntuを例として使用していますが、実際に使用するLinuxディストリビューションは各プロジェクトの要件に応じて選択してください。
+
+**利用可能なディストリビューション一覧を確認：**
+```powershell
+# インストール可能なディストリビューション一覧
+wsl --list --online
+```
+
+**一般的な選択肢：**
+- **Ubuntu** (22.04/20.04 LTS) - 最も一般的、サポートが充実
+- **Debian** - 安定性重視のプロジェクト向け
+- **openSUSE** - エンタープライズ環境向け
+- **AlmaLinux** / **Rocky Linux** - RHEL互換が必要な場合
+- **Alpine** - 軽量環境が必要な場合
+
+**インストール方法（Ubuntuを例として）：**
+
+```powershell
+# コマンドラインでインストールする場合
+wsl --install -d Ubuntu-22.04
+
+# 他のディストリビューションの例：
+# wsl --install -d Debian
+# wsl --install -d openSUSE-Leap-15.5
+# wsl --install -d AlmaLinux-9
+
+# または Microsoft Store経由：
+# 1. Microsoft Storeを開く
+# 2. 希望のディストリビューション名で検索
+# 3. インストールボタンをクリック
+```
+
+> 📝 **プロジェクトでの決定事項**:
+> 各プロジェクトでは以下を明確にしてください：
+> - 使用するディストリビューションとバージョン
+> - 選定理由（パッケージ要件、ライブラリ互換性など）
+> - プロジェクト固有の追加設定があれば文書化
+
+#### 方法3: コントロールパネルから手動で有効化
+
+GUIで設定したい場合：
+
+1. **Windowsの機能の有効化または無効化**を開く
+   - コントロールパネル → プログラムと機能 → Windowsの機能の有効化または無効化
+   - または「Win + R」→「optionalfeatures」と入力
+
+2. **以下の項目にチェックを入れる（必須）**：
+   - ✅ Linux 用 Windows サブシステム（Windows Subsystem for Linux）
+   - ✅ 仮想マシン プラットフォーム（Virtual Machine Platform）
+   - ✅ Hyper-V（利用可能な場合）
+
+3. **OK**をクリックし、**PCを再起動**
+
+---
+
+### ⚠️ よくあるエラーと対処法
+
+#### エラー 0x80370114: 最も一般的なエラー
+
+**エラーメッセージ：**
+```
+WslRegisterDistribution failed with error: 0x80370114
+Error: 0x80370114 The operation could not be started because a required feature is not installed.
+```
+
+**根本原因と解決手順：**
+
+##### 原因1: 仮想化が無効（最も多い原因）
+
+**確認方法：**
+```powershell
+# タスクマネージャーで確認
+# パフォーマンスタブ → CPU → 「仮想化: 無効」と表示されている
+```
+
+**解決手順：**
+1. PCメーカーのサポートサイトでBIOS/UEFI設定方法を確認
+2. PCを再起動し、起動時にBIOS設定に入る（F2、F10、Delキーなど）
+3. 以下の設定を探して有効化：
+   - **Intel CPU**: 
+     - Advanced → CPU Configuration → Intel Virtualization Technology → Enabled
+   - **AMD CPU**: 
+     - Advanced → CPU Configuration → SVM Mode → Enabled
+4. 設定を保存（通常F10キー）して再起動
+5. タスクマネージャーで「仮想化: 有効」を確認
+
+##### 原因2: Virtual Machine Platform機能が無効
+
+**解決手順：**
+```powershell
+# PowerShell（管理者）で実行
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# 機能の有効化を確認
+Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
+
+# PCを再起動
+Restart-Computer
+```
+
+##### 原因3: WSLカーネルが古いまたは破損
+
+**解決手順：**
+```powershell
+# WSLカーネルを手動で更新
+wsl --update --web-download
+
+# WSLを完全にリセット（最終手段）
+wsl --unregister Ubuntu
+wsl --install -d Ubuntu-22.04
+```
+
+#### その他のよくあるエラー
+
+##### エラー: 0x800701bc
+```powershell
+# WSL2カーネルが未インストール
+# 解決方法：
+wsl --update
+```
+
+##### エラー: 0x80370102
+```powershell
+# 仮想マシンが起動できない
+# 解決方法：
+bcdedit /set hypervisorlaunchtype auto
+# PCを再起動
+```
+
+##### エラー: 0x80040326
+```powershell
+# WSL機能が無効
+# 解決方法：
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all
+# PCを再起動
+```
+
+---
+
+### 🔧 トラブルシューティングチェックリスト
+
+WSL2インストールで問題が発生した場合、以下の順番で確認してください：
+
+#### ステップ1: 基本確認
+- [ ] Windows 10 version 2004以降またはWindows 11を使用している
+- [ ] 64ビット版Windowsを使用している
+- [ ] 管理者権限でPowerShellを実行している
+
+#### ステップ2: 仮想化確認
+- [ ] タスクマネージャーで「仮想化: 有効」と表示されている
+- [ ] BIOS/UEFIでVT-x（Intel）またはAMD-V（AMD）が有効
+
+#### ステップ3: Windows機能確認
+- [ ] 「Linux用Windowsサブシステム」が有効
+- [ ] 「仮想マシンプラットフォーム」が有効
+- [ ] 各機能を有効化後にPCを再起動した
+
+#### ステップ4: WSL確認
+- [ ] `wsl --status`が正常に動作する
+- [ ] `wsl --update`で最新版に更新済み
+- [ ] `wsl --set-default-version 2`を実行済み
+
+#### ステップ5: 最終手段
+問題が解決しない場合：
+1. WSLを完全にアンインストール
+   ```powershell
+   wsl --shutdown
+   wsl --unregister Ubuntu
+   ```
+2. Windows機能を無効化してPC再起動
+3. Windows機能を再度有効化してPC再起動
+4. WSL2を最初からインストール
+
+---
 
 ### Ubuntu初期設定
 
@@ -156,19 +428,21 @@ sudo update-locale LANG=ja_JP.UTF-8
    code .
    ```
 
-### WSL2のトラブルシューティング
+### パフォーマンス最適化（推奨）
 
-#### WSL2が起動しない場合
-```powershell
-# PowerShell（管理者）で実行
-wsl --shutdown
-wsl --update
-wsl
+#### Git操作が遅い場合の対処
+
+```bash
+# Windows側のファイル（/mnt/c/）ではなくWSL2内のファイルシステムを使用
+cd ~  # WSL2のホームディレクトリ
+mkdir -p projects
+cd projects
+# ここにプロジェクトを配置
+
+# 速度比較
+# 遅い: /mnt/c/Users/yourname/projects/
+# 速い: ~/projects/
 ```
-
-#### 「仮想化が有効になっていません」エラー
-1. BIOS/UEFIで仮想化を有効化（Intel VT-x / AMD-V）
-2. タスクマネージャー → パフォーマンス → CPU で「仮想化: 有効」を確認
 
 ---
 
