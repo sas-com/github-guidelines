@@ -4,780 +4,508 @@
 *開発環境のセットアップから GitHubアカウント設定まで完全ガイド*  
 *最終更新: 2025年9月12日*
 
-## 📌 はじめに
+---
 
-このガイドは、エス・エー・エス株式会社で GitHub を使った開発を始めるために必要な環境構築を、ゼロから完全にサポートします。
-Windows 環境での WSL2 セットアップから、Git の初期設定、GitHub アカウントの作成・設定まで、全ての手順を網羅しています。
+## 📚 目次
 
-## ⏱️ 所要時間
+1. **[🎯 はじめに](#-はじめに)**
+   - 本ガイドの目的
+   - 対象者
+   - 所要時間と難易度
 
-**環境構築全体: 約1-2時間**
+2. **[📋 全体構成と作業フロー](#-全体構成と作業フロー)**
+   - 環境構築の全体像
+   - 作業順序と依存関係
+   - チェックリスト
 
-| ステップ | 所要時間 | 備考 |
-|---------|----------|------|
-| WSL2のインストール | 15-30分 | Windows必須、再起動含む |
-| Gitのインストールと初期設定 | 10-15分 | WSL2内で実施 |
-| GitHubアカウント作成と2FA設定 | 20-30分 | 既存アカウント利用可 |
-| SSH鍵の生成と登録 | 10-15分 | WSL2内で実施 |
-| 接続テスト | 5分 | 動作確認 |
+3. **[🖥️ 第1章: WSL2環境の構築（Windows必須）](#️-第1章-wsl2環境の構築windows必須)**
+   - 事前確認事項
+   - インストール方法の選択
+   - セットアップ手順
+   - トラブルシューティング
+
+4. **[🔧 第2章: Git環境の構築](#-第2章-git環境の構築)**
+   - Gitのインストール
+   - 初期設定
+   - 動作確認
+
+5. **[🌐 第3章: GitHubアカウントの設定](#-第3章-githubアカウントの設定)**
+   - アカウント作成
+   - プロフィール設定
+   - セキュリティ設定（2FA必須）
+
+6. **[🔑 第4章: SSH接続の設定](#-第4章-ssh接続の設定)**
+   - SSH鍵の生成
+   - GitHubへの登録
+   - 接続テスト
+
+7. **[🏢 第5章: 組織への参加と最終設定](#-第5章-組織への参加と最終設定)**
+   - 組織への参加
+   - 通知設定
+   - 最終確認
+
+8. **[❓ 付録: トラブルシューティング](#-付録-トラブルシューティング)**
+9. **[📞 サポート情報](#-サポート情報)**
 
 ---
 
-## 📋 作業チェックリスト
+## 🎯 はじめに
 
-### 環境構築（Windows必須）
-- [ ] WSL2のインストールと初期設定
-- [ ] Ubuntu（推奨）のセットアップ
-- [ ] VS Codeとの連携設定
+### 📌 本ガイドの目的
 
-### Git環境設定
-- [ ] Gitのインストール（WSL2内）
-- [ ] Git初期設定（user.name, user.email等）
-- [ ] 日本語環境の設定
+このガイドは、エス・エー・エス株式会社で GitHub を使った開発を始めるために必要な環境構築を、**ゼロから完全にサポート**します。
 
-### GitHubアカウント設定
-- [ ] GitHubアカウント作成（または既存アカウントの利用）
-- [ ] プロフィール設定
-- [ ] 2要素認証（2FA）設定 ※必須
-- [ ] メール通知設定
+### 👥 対象者
 
-### SSH接続設定
-- [ ] SSH鍵の生成（ed25519推奨）
-- [ ] GitHubへのSSH鍵登録
-- [ ] 接続テストと動作確認
-- [ ] 組織への参加
+- 新規参画者（エンジニア）
+- GitHub環境を再構築する必要がある方
+- Windows/Mac/Linux環境で開発を行う方
 
-### 推奨項目
-- [ ] プロフィール画像設定
-- [ ] READMEプロフィール作成
-- [ ] GPG鍵の設定（コミット署名用）
+### ⏱️ 所要時間と難易度
+
+| カテゴリ | 所要時間 | 難易度 |
+|---------|----------|--------|
+| **全体所要時間** | **1-2時間** | **★★☆** |
+| WSL2のインストール（Windows） | 15-30分 | ★★☆ |
+| Gitのセットアップ | 10-15分 | ★☆☆ |
+| GitHubアカウント設定 | 20-30分 | ★☆☆ |
+| SSH接続設定 | 10-15分 | ★★☆ |
+| 最終確認 | 5-10分 | ★☆☆ |
 
 ---
 
-## 1️⃣ WSL2のインストール（Windows環境必須）
+## 📋 全体構成と作業フロー
 
-> 💡 **Mac/Linux ユーザーの方**: このセクションはスキップして「[2️⃣ Gitのインストールと初期設定](#2️⃣-gitのインストールと初期設定)」へ進んでください。
+### 🗺️ 環境構築の全体像
 
-### WSL2とは
+```mermaid
+graph TB
+    Start([開始]) --> OS{OSの確認}
+    OS -->|Windows| WSL[WSL2インストール]
+    OS -->|Mac/Linux| Git[Gitインストール]
+    WSL --> Git
+    Git --> GitHub[GitHubアカウント作成]
+    GitHub --> TwoFA[2FA設定<br/>※必須]
+    TwoFA --> SSH[SSH鍵設定]
+    SSH --> Org[組織参加]
+    Org --> Complete([完了])
+    
+    style Start fill:#90EE90
+    style Complete fill:#90EE90
+    style TwoFA fill:#FFB6C1
+```
 
-Windows Subsystem for Linux 2（WSL2）は、Windows上でLinux環境を動作させる仕組みです。
-開発において Bash コマンドや Linux ツールを使用するため、Windows 環境では必須となります。
+### 📝 作業の依存関係
+
+| 順序 | 作業項目 | 前提条件 | 必須/任意 |
+|------|----------|----------|-----------|
+| 1 | WSL2インストール | Windows環境 | Windows必須 |
+| 2 | Gitインストール | WSL2完了（Windows）<br/>なし（Mac/Linux） | 必須 |
+| 3 | GitHubアカウント作成 | なし | 必須 |
+| 4 | 2FA設定 | GitHubアカウント | **必須** |
+| 5 | SSH鍵設定 | Git設定完了 | 必須 |
+| 6 | 組織参加 | 2FA設定完了 | 必須 |
+
+### ✅ マスターチェックリスト
+
+#### 📦 環境準備フェーズ
+- [ ] OS要件を満たしている（Windows 10 v2004以降 / macOS / Linux）
+- [ ] 管理者権限がある
+- [ ] インターネット接続が安定している
+
+#### 🔧 セットアップフェーズ
+- [ ] WSL2インストール完了（Windowsのみ）
+- [ ] Gitインストール完了
+- [ ] Git初期設定完了（user.name, user.email）
+
+#### 🌐 GitHubフェーズ
+- [ ] GitHubアカウント作成完了
+- [ ] プロフィール設定完了
+- [ ] **2FA設定完了（必須）**
+- [ ] リカバリーコード保管完了
+
+#### 🔑 接続フェーズ
+- [ ] SSH鍵生成完了
+- [ ] GitHub登録完了
+- [ ] 接続テスト成功
+
+#### 🏢 最終フェーズ
+- [ ] 組織参加完了
+- [ ] 通知設定完了
+- [ ] 動作確認完了
 
 ---
 
-### 🔍 事前確認（重要）
+## 🖥️ 第1章: WSL2環境の構築（Windows必須）
 
-**WSL2のインストールを開始する前に、以下の項目を必ず確認してください。**
-これらの確認を怠ると、エラー 0x80370114 などのインストールエラーが発生する可能性があります。
+> 💡 **Mac/Linuxユーザーの方へ**  
+> このセクションはスキップして「[第2章: Git環境の構築](#-第2章-git環境の構築)」へ進んでください。
 
-#### 1. システム要件の確認
+### 📊 章の概要
 
-PowerShell を**管理者として実行**し、以下のコマンドで確認：
+| 項目 | 内容 |
+|------|------|
+| **目的** | Windows上でLinux開発環境を構築 |
+| **所要時間** | 15-30分（再起動含む） |
+| **難易度** | ★★☆ |
+| **必要権限** | 管理者権限 |
+
+---
+
+### 1.1 事前確認（必須）
+
+#### 🔍 システム要件チェック
+
+**手順1: Windowsバージョン確認**
+
+PowerShellを**管理者として実行**し、以下のコマンドを実行：
 
 ```powershell
-# Windows バージョンの確認
-[System.Environment]::OSVersion.Version
-
-# 出力例（Windows 10 version 2004以降が必要）：
-# Major  Minor  Build  Revision
-# -----  -----  -----  --------
-# 10     0      19041  0
-
-# または、より詳細な情報を確認
+# Windowsバージョンを確認
 winver
-# ポップアップウィンドウで「バージョン 2004」以降であることを確認
 ```
 
 **必要要件：**
 - ✅ Windows 10 バージョン 2004以降（ビルド 19041以降）
 - ✅ Windows 11（全バージョン対応）
-- ✅ x64 システム（64ビット版Windows）
+- ✅ x64システム（64ビット版）
 
-#### 2. 仮想化機能の確認（最重要）
+#### 🔍 仮想化機能チェック
+
+**手順2: 仮想化の有効確認**
+
+1. `Ctrl + Shift + Esc` でタスクマネージャーを開く
+2. 「パフォーマンス」タブ → 「CPU」を選択
+3. 右下に「**仮想化: 有効**」と表示されていることを確認
+
+**仮想化が無効の場合：**
+1. PCを再起動し、BIOS/UEFI設定画面へ（F2, F10, Delキーなど）
+2. 以下を有効化：
+   - Intel CPU: **Intel VT-x** → Enabled
+   - AMD CPU: **AMD-V / SVM Mode** → Enabled
+3. 設定を保存して再起動
+
+#### 🔍 Windows機能の状態確認
+
+**手順3: 必要機能の確認**
 
 ```powershell
-# タスクマネージャーで確認（最も簡単）
-# 1. Ctrl + Shift + Esc でタスクマネージャーを開く
-# 2. 「パフォーマンス」タブ → 「CPU」を選択
-# 3. 右下に「仮想化: 有効」と表示されていることを確認
-
-# PowerShellコマンドで確認
-Get-ComputerInfo | Select-Object HyperV*
-
-# 出力例（仮想化が有効な場合）：
-# HyperVRequirementDataExecutionPreventionAvailable       : True
-# HyperVRequirementSecondLevelAddressTranslation          : True
-# HyperVRequirementVirtualizationFirmwareEnabled          : True  ← これがTrueである必要
-# HyperVRequirementVMMonitorModeExtensions                : True
+# PowerShell（管理者）で実行
+Get-WindowsOptionalFeature -Online | Where-Object {
+    $_.FeatureName -like "*Linux*" -or 
+    $_.FeatureName -like "*VirtualMachinePlatform*"
+} | Format-Table FeatureName, State -AutoSize
 ```
 
-**⚠️ 仮想化が無効の場合：**
-1. PCを再起動し、起動時にBIOS/UEFI設定に入る（通常F2、F10、DelキーなどでBIOS画面へ）
-2. 以下の設定を探して有効化：
-   - Intel CPU: "Intel Virtualization Technology (VT-x)" を Enabled に
-   - AMD CPU: "SVM Mode" または "AMD-V" を Enabled に
-3. 設定を保存してPCを再起動
+**期待される結果：**
 
-#### 3. Windows機能の状態確認
+| 機能名 | 必要な状態 | 説明 |
+|--------|------------|------|
+| Microsoft-Windows-Subsystem-Linux | Enabled | Linux基盤機能 |
+| VirtualMachinePlatform | Enabled | 仮想化プラットフォーム |
+
+---
+
+### 1.2 Windows機能の有効化
+
+> ⚠️ **重要な注意事項**  
+> Windows機能を有効化する方法は**3つ**あります。どれか**1つ**を選んで実行してください。
+
+#### 📊 有効化方法の比較
+
+| 方法 | 推奨度 | 特徴 | 適している人 |
+|------|--------|------|--------------|
+| **方法A: PowerShell** | ⭐⭐⭐ | コマンド2つで完了 | コマンド操作に慣れている人 |
+| **方法B: DISM** | ⭐⭐ | 詳細な制御が可能 | トラブル時の代替手段 |
+| **方法C: GUI** | ⭐ | 視覚的で分かりやすい | コマンドが苦手な人 |
+
+---
+
+#### 📝 方法A: PowerShellで有効化（推奨）
+
+PowerShellを**管理者として実行**：
 
 ```powershell
-# 必要なWindows機能の状態を確認
-Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*" -or $_.FeatureName -like "*Virtual*"} | Select-Object FeatureName, State
-
-# 出力例：
-# FeatureName                           State
-# -----------                           -----
-# VirtualMachinePlatform                Disabled  ← これらをEnabledにする必要
-# Microsoft-Windows-Subsystem-Linux     Disabled  ← これらをEnabledにする必要
-# HyperV-KernelInt-VirtualDevice        Disabled  ← 任意（詳細は下記参照）
-```
-
-#### Windows機能の有効化手順
-
-上記のコマンドで **Disabled** と表示された機能がある場合、以下の手順で有効化してください。
-
-##### 方法1: PowerShellで有効化（推奨）
-
-**PowerShellを管理者として実行**し、以下のコマンドを順番に実行：
-
-```powershell
-# 1. Linux用Windowsサブシステム機能を有効化
+# ステップ1: Linux用サブシステムを有効化
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -All -NoRestart
 
-# 2. 仮想マシンプラットフォーム機能を有効化
+# ステップ2: 仮想マシンプラットフォームを有効化
 Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All -NoRestart
 
-# 3. 有効化の確認
+# ステップ3: 有効化を確認
 Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
 Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
 
-# 4. 両方が "State : Enabled" になっていることを確認
-```
+# 両方が "State : Enabled" になっていることを確認
 
-##### 方法2: DISMコマンドで有効化
-
-```powershell
-# 1. Linux用Windowsサブシステム機能を有効化
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-
-# 2. 仮想マシンプラットフォーム機能を有効化
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-# 3. 操作成功メッセージを確認
-# "The operation completed successfully." と表示されれば成功
-```
-
-##### 方法3: GUIで有効化（コントロールパネル）
-
-1. **Windows機能の有効化または無効化**を開く
-   - `Win + R` キーを押して「`optionalfeatures`」と入力してEnter
-   - または コントロールパネル → プログラムと機能 → Windowsの機能の有効化または無効化
-
-2. **以下の機能にチェックを入れる**：
-   - ✅ **Linux 用 Windows サブシステム** (Windows Subsystem for Linux) **※必須**
-   - ✅ **仮想マシン プラットフォーム** (Virtual Machine Platform) **※必須**
-   - ⬜ **Hyper-V**（表示される場合のみ、Windows 10 Pro/Enterprise）**※任意**
-   - ⬜ **HyperV-KernelInt-VirtualDevice**（表示される場合）**※任意、通常は無効のまま**
-
-3. **OKボタン**をクリック
-
-4. **変更の適用**
-   - 「Windowsの機能」ダイアログで進行状況を確認
-   - 完了後「今すぐ再起動」または「後で再起動」を選択
-
-##### 機能有効化の確認
-
-**有効化後の確認方法：**
-
-```powershell
-# 詳細な状態確認
-Get-WindowsOptionalFeature -Online | Where-Object {$_.FeatureName -like "*Linux*" -or $_.FeatureName -like "*Virtual*"} | Format-Table FeatureName, State -AutoSize
-
-# 期待される出力：
-# FeatureName                           State
-# -----------                           -----
-# VirtualMachinePlatform                Enabled  ← Enabledになっている
-# Microsoft-Windows-Subsystem-Linux     Enabled  ← Enabledになっている
-# HyperV-KernelInt-VirtualDevice        Disabled ← Disabled/Enabledどちらでもよい
-```
-
-##### 機能有効化でエラーが発生した場合
-
-**エラー例と対処法：**
-
-###### エラー: 0x800F081F
-```powershell
-# エラーメッセージ：
-# "The source files could not be found"
-
-# 解決方法：
-# 1. インターネット接続を確認
-# 2. Windows Updateを最新に更新
-dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /LimitAccess
-
-# 3. それでも失敗する場合、Windows 10のISOファイルを指定
-# dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /source:D:\sources\sxs
-```
-
-###### エラー: "管理者権限が必要"
-```powershell
-# 解決方法：
-# 1. PowerShellを右クリック → "管理者として実行"
-# 2. UAC（ユーザーアカウント制御）で「はい」をクリック
-# 3. プロンプトが "PS C:\Windows\system32>" になっていることを確認
-```
-
-###### エラー: "機能が見つからない"
-```powershell
-# 解決方法：Windows Updateで最新の状態にする
-# 1. 設定 → 更新とセキュリティ → Windows Update
-# 2. 「更新プログラムのチェック」をクリック
-# 3. すべての更新を適用後、PCを再起動
-# 4. 再度機能の有効化を試行
-```
-
-#### 必須：再起動の実行
-
-**重要：機能有効化後は必ずPCを再起動してください**
-
-```powershell
-# コマンドで再起動する場合
+# ステップ4: PCを再起動（必須）
 Restart-Computer
-
-# 手動で再起動する場合
-# スタートメニュー → 電源 → 再起動
-```
-
-#### 各機能の役割と必要性
-
-| 機能名 | 役割 | WSL2での必要性 | 説明 |
-|-------|------|----------------|------|
-| **Microsoft-Windows-Subsystem-Linux** | Linux環境の基盤を提供 | **必須** | これがないとLinuxが動作しない |
-| **VirtualMachinePlatform** | 仮想マシンの実行基盤 | **必須** | WSL2は軽量仮想マシン技術を使用 |
-| **HyperV-KernelInt-VirtualDevice** | Hyper-Vカーネル統合仮想デバイス | **任意** | 仮想化パフォーマンス向上、通常は無効のまま |
-| **Hyper-V** | 高度な仮想化機能 | **任意** | Pro/Enterprise版のみ、有効化により性能向上 |
-
-#### HyperV-KernelInt-VirtualDevice について
-
-**概要：**
-- Windows 10/11のHyper-V仮想化基盤と連携する統合仮想デバイス機能
-- WSL2とは直接関係がないが、システム全体の仮想化パフォーマンスに影響する可能性
-- 主にHyper-V仮想マシンや高度な仮想化機能で使用される
-
-**WSL2での影響：**
-```markdown
-✅ Disabled（無効）のまま使用する場合：
-- WSL2は正常に動作する
-- 一般的な開発作業には影響なし
-- システムリソースの消費が少ない
-
-✅ Enabled（有効）にした場合：
-- WSL2は正常に動作する
-- 仮想化パフォーマンスがわずかに向上する可能性
-- システムリソースをわずかに消費
-```
-
-**有効化の判断基準：**
-
-| 環境 | 推奨設定 | 理由 |
-|------|----------|------|
-| **一般的な開発環境** | Disabled | 不要、リソース節約 |
-| **Hyper-V使用環境** | Enabled | パフォーマンス向上 |
-| **Docker Desktop使用** | Disabled | 競合の可能性を回避 |
-| **仮想化ソフト併用** | Disabled | 他の仮想化ソフトとの競合回避 |
-
-**有効化する場合の手順：**
-```powershell
-# PowerShell（管理者）で実行
-Enable-WindowsOptionalFeature -Online -FeatureName HyperV-KernelInt-VirtualDevice -All -NoRestart
-
-# 確認
-Get-WindowsOptionalFeature -Online -FeatureName HyperV-KernelInt-VirtualDevice
-
-# PC再起動
-Restart-Computer
-```
-
-**⚠️ 注意事項：**
-- VMware WorkstationやVirtualBoxなど他の仮想化ソフトウェアと競合する可能性
-- 問題が発生した場合は無効化して再起動
-- WSL2の動作には直接影響しないため、問題があれば無効のまま使用
-
-#### 4. WSLの現在の状態確認
-
-```powershell
-# WSLがインストール済みか確認
-wsl --status
-
-# エラーが出る場合はWSL未インストール
-# 正常な場合は現在のWSL情報が表示される
 ```
 
 ---
 
-### 📦 インストール手順
+#### 📝 方法B: DISMコマンドで有効化
 
-> 🎯 **重要**: WSL2のインストールには**3つの方法**があります。以下の情報を確認して、あなたの環境に最適な方法を選択してください。
+PowerShellを**管理者として実行**：
 
-#### 📊 インストール方法の比較表
+```powershell
+# ステップ1: Linux用サブシステムを有効化
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
 
-| 方法 | 難易度 | 所要時間 | 成功率 | 推奨対象 | 特徴 |
-|------|--------|----------|--------|----------|------|
-| **方法1: 簡単インストール** | ⭐ 簡単 | 5-10分 | 95% | 初心者・一般ユーザー | ワンコマンドで完了、自動設定 |
-| **方法2: 手動インストール** | ⭐⭐ 中級 | 15-20分 | 90% | トラブル時・カスタマイズが必要な場合 | 各手順を個別実行、詳細制御可能 |
-| **方法3: GUI手動設定** | ⭐⭐⭐ 上級 | 20-30分 | 85% | コマンド操作が苦手な方・視覚的確認を好む方 | Windows設定画面から操作、視覚的 |
+# ステップ2: 仮想マシンプラットフォームを有効化
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# "The operation completed successfully." と表示されれば成功
+
+# ステップ3: PCを再起動（必須）
+Restart-Computer
+```
+
+---
+
+#### 📝 方法C: GUIで有効化
+
+1. **Windows機能の画面を開く**
+   - `Win + R` → `optionalfeatures` と入力 → Enter
+
+2. **以下の機能にチェックを入れる**
+   - ☑ **Linux 用 Windows サブシステム**（必須）
+   - ☑ **仮想マシン プラットフォーム**（必須）
+
+3. **OKをクリック** → 変更を適用
+
+4. **PCを再起動**（必須）
+
+---
+
+### 1.3 WSL2のインストール
+
+> 🎯 **インストール方法の選択**  
+> ここでも**3つの方法**があります。状況に応じて選択してください。
 
 #### 🗺️ インストール方法選択フローチャート
 
 ```mermaid
-graph TD
-    Start[WSL2をインストールしたい] --> Check1{Windows 11<br/>または<br/>Windows 10 v2004以降？}
-    Check1 -->|はい| Check2{コマンドライン<br/>操作に慣れている？}
-    Check1 -->|いいえ| Update[Windowsを<br/>アップデート]
-    
-    Check2 -->|はい| Check3{カスタマイズ<br/>が必要？}
-    Check2 -->|いいえ| Method3[方法3:<br/>GUI手動設定]
-    
-    Check3 -->|いいえ| Method1[方法1:<br/>簡単インストール<br/>⭐推奨⭐]
-    Check3 -->|はい| Method2[方法2:<br/>手動インストール]
-    
-    Update --> Check1
+flowchart TD
+    Start[WSL2をインストールしたい] --> Check1{初めての<br/>インストール？}
+    Check1 -->|はい| Method1[方法1:<br/>簡単インストール<br/>⭐推奨]
+    Check1 -->|いいえ| Check2{以前エラーが<br/>発生した？}
+    Check2 -->|はい| Method2[方法2:<br/>手動インストール]
+    Check2 -->|いいえ| Check3{カスタマイズが<br/>必要？}
+    Check3 -->|はい| Method2
+    Check3 -->|いいえ| Method1
     
     style Method1 fill:#90EE90
     style Method2 fill:#87CEEB
-    style Method3 fill:#FFE4B5
 ```
-
-#### 📝 各方法の詳細説明
-
-##### 🚀 **方法1: 簡単インストール（推奨）**
-- **こんな方におすすめ**:
-  - 初めてWSL2をインストールする方
-  - 特別なカスタマイズが不要な方
-  - 最短時間でセットアップしたい方
-- **メリット**:
-  - ✅ 1つのコマンドですべて完了
-  - ✅ エラーが発生しにくい
-  - ✅ Microsoftが推奨する標準的な方法
-- **デメリット**:
-  - ❌ 細かいカスタマイズができない
-  - ❌ エラー時の原因特定が難しい
-
-##### 🔧 **方法2: 手動インストール**
-- **こんな方におすすめ**:
-  - 方法1でエラーが発生した方
-  - 特定のLinuxディストリビューションを選びたい方
-  - 各ステップを理解しながら進めたい方
-- **メリット**:
-  - ✅ 各ステップを個別に確認できる
-  - ✅ エラー箇所を特定しやすい
-  - ✅ カスタマイズの自由度が高い
-- **デメリット**:
-  - ❌ 手順が多い
-  - ❌ コマンドを複数実行する必要がある
-
-##### 🖱️ **方法3: GUI手動設定**
-- **こんな方におすすめ**:
-  - コマンドライン操作が苦手な方
-  - Windows設定画面で視覚的に確認したい方
-  - 企業環境でコマンド実行が制限されている方
-- **メリット**:
-  - ✅ 視覚的で分かりやすい
-  - ✅ コマンドを覚える必要がない
-  - ✅ 設定状態を目で確認できる
-- **デメリット**:
-  - ❌ 時間がかかる
-  - ❌ 手動での操作が多い
-  - ❌ Windows更新により画面が変わる可能性
-
-#### ⚡ クイック診断
-
-以下の質問に答えて、最適な方法を見つけましょう：
-
-| 質問 | はい → | いいえ → |
-|------|---------|-----------|
-| Q1. 急いでいますか？ | 方法1へ | 次の質問へ |
-| Q2. コマンド操作は得意ですか？ | 次の質問へ | 方法3へ |
-| Q3. 以前WSLインストールで失敗しましたか？ | 方法2へ | 方法1へ |
-| Q4. 特定のLinuxが必要ですか？ | 方法2へ | 方法1へ |
 
 ---
 
-それでは、選択した方法の手順に進んでください：
+#### ✨ 方法1: 簡単インストール（推奨）
 
-#### 方法1: 簡単インストール（推奨）
-
-**前提条件を全て満たしている場合**、PowerShell を**管理者として実行**し、以下のコマンドを入力：
+PowerShellを**管理者として実行**：
 
 ```powershell
-# WSL2と既定のディストリビューション（Ubuntu）を一括インストール
+# WSL2と既定のUbuntuを一括インストール
 wsl --install
 
-# 特定のディストリビューションを指定する場合：
-# wsl --install -d <ディストリビューション名>
-# 例: wsl --install -d Debian
-
-# インストール完了後、以下のメッセージが表示されます：
-# "The requested operation is successful. Changes will not be effective until the system is rebooted."
+# インストール完了メッセージを確認
+# "The requested operation is successful..."
 
 # PCを再起動（必須）
 Restart-Computer
-
-# 再起動後、自動的に選択したディストリビューションのセットアップが開始されます
 ```
 
-> 💡 **ヒント**: `wsl --install`のみ実行した場合、既定でUbuntuがインストールされます。プロジェクトで別のディストリビューションが必要な場合は、`-d`オプションで明示的に指定してください。
+**再起動後：**
+- Ubuntuが自動的に起動
+- ユーザー名とパスワードを設定
 
-#### 方法2: 手動インストール（方法1でエラーが発生する場合）
+---
 
-**ステップ1: 必要なWindows機能を個別に有効化**
+#### 🔧 方法2: 手動インストール
 
-PowerShell を**管理者として実行**：
-
-```powershell
-# 1. Windows Subsystem for Linux機能を有効化
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-
-# 2. 仮想マシンプラットフォーム機能を有効化（重要）
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-# 3. 有効化を確認
-Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
-Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
-
-# 両方が "State: Enabled" になっていることを確認
-
-# 4. PCを再起動（必須 - 機能を有効にするため）
-Restart-Computer
-```
-
-**ステップ2: WSL2カーネルの更新**
-
-再起動後、PowerShell を**管理者として実行**：
+**ステップ1: WSLカーネル更新**
 
 ```powershell
 # WSLカーネルを最新版に更新
 wsl --update
 
-# WSL2を既定バージョンに設定
+# WSL2を既定に設定
 wsl --set-default-version 2
 ```
 
-**ステップ3: Linuxディストリビューションのインストール**
+**ステップ2: ディストリビューション選択**
 
-> ⚠️ **重要**: 本ガイドではUbuntuを例として使用していますが、実際に使用するLinuxディストリビューションは各プロジェクトの要件に応じて選択してください。
-
-**利用可能なディストリビューション一覧を確認：**
 ```powershell
-# インストール可能なディストリビューション一覧
+# 利用可能な一覧を確認
 wsl --list --online
-```
 
-**一般的な選択肢：**
-- **Ubuntu** (22.04/20.04 LTS) - 最も一般的、サポートが充実
-- **Debian** - 安定性重視のプロジェクト向け
-- **openSUSE** - エンタープライズ環境向け
-- **AlmaLinux** / **Rocky Linux** - RHEL互換が必要な場合
-- **Alpine** - 軽量環境が必要な場合
-
-**インストール方法（Ubuntuを例として）：**
-
-```powershell
-# コマンドラインでインストールする場合
-wsl --install -d Ubuntu-22.04
-
-# 他のディストリビューションの例：
-# wsl --install -d Debian
-# wsl --install -d openSUSE-Leap-15.5
-# wsl --install -d AlmaLinux-9
-
-# または Microsoft Store経由：
-# 1. Microsoft Storeを開く
-# 2. 希望のディストリビューション名で検索
-# 3. インストールボタンをクリック
-```
-
-> 📝 **プロジェクトでの決定事項**:
-> 各プロジェクトでは以下を明確にしてください：
-> - 使用するディストリビューションとバージョン
-> - 選定理由（パッケージ要件、ライブラリ互換性など）
-> - プロジェクト固有の追加設定があれば文書化
-
-#### 方法3: コントロールパネルから手動で有効化
-
-GUIで設定したい場合：
-
-1. **Windowsの機能の有効化または無効化**を開く
-   - コントロールパネル → プログラムと機能 → Windowsの機能の有効化または無効化
-   - または「Win + R」→「optionalfeatures」と入力
-
-2. **以下の項目にチェックを入れる（必須）**：
-   - ✅ Linux 用 Windows サブシステム（Windows Subsystem for Linux）
-   - ✅ 仮想マシン プラットフォーム（Virtual Machine Platform）
-   - ✅ Hyper-V（利用可能な場合）
-
-3. **OK**をクリックし、**PCを再起動**
-
----
-
-### ⚠️ よくあるエラーと対処法
-
-#### エラー 0x80370114: 最も一般的なエラー
-
-**エラーメッセージ：**
-```
-WslRegisterDistribution failed with error: 0x80370114
-Error: 0x80370114 The operation could not be started because a required feature is not installed.
-```
-
-**根本原因と解決手順：**
-
-##### 原因1: 仮想化が無効（最も多い原因）
-
-**確認方法：**
-```powershell
-# タスクマネージャーで確認
-# パフォーマンスタブ → CPU → 「仮想化: 無効」と表示されている
-```
-
-**解決手順：**
-1. PCメーカーのサポートサイトでBIOS/UEFI設定方法を確認
-2. PCを再起動し、起動時にBIOS設定に入る（F2、F10、Delキーなど）
-3. 以下の設定を探して有効化：
-   - **Intel CPU**: 
-     - Advanced → CPU Configuration → Intel Virtualization Technology → Enabled
-   - **AMD CPU**: 
-     - Advanced → CPU Configuration → SVM Mode → Enabled
-4. 設定を保存（通常F10キー）して再起動
-5. タスクマネージャーで「仮想化: 有効」を確認
-
-##### 原因2: Virtual Machine Platform機能が無効
-
-**解決手順：**
-```powershell
-# PowerShell（管理者）で実行
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-# 機能の有効化を確認
-Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform
-
-# PCを再起動
-Restart-Computer
-```
-
-##### 原因3: WSLカーネルが古いまたは破損
-
-**解決手順：**
-```powershell
-# WSLカーネルを手動で更新
-wsl --update --web-download
-
-# WSLを完全にリセット（最終手段）
-wsl --unregister Ubuntu
+# Ubuntuをインストール（例）
 wsl --install -d Ubuntu-22.04
 ```
 
-#### その他のよくあるエラー
+---
 
-##### エラー: 0x800701bc
-```powershell
-# WSL2カーネルが未インストール
-# 解決方法：
-wsl --update
-```
+#### 🖱️ 方法3: Microsoft Store経由
 
-##### エラー: 0x80370102
-```powershell
-# 仮想マシンが起動できない
-# 解決方法：
-bcdedit /set hypervisorlaunchtype auto
-# PCを再起動
-```
-
-##### エラー: 0x80040326
-```powershell
-# WSL機能が無効
-# 解決方法：
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all
-# PCを再起動
-```
+1. Microsoft Storeを開く
+2. 「Ubuntu」で検索
+3. 「Ubuntu 22.04 LTS」を選択
+4. インストールをクリック
 
 ---
 
-### 🔧 トラブルシューティングチェックリスト
+### 1.4 Ubuntu初期設定
 
-WSL2インストールで問題が発生した場合、以下の順番で確認してください：
-
-#### ステップ1: 基本確認
-- [ ] Windows 10 version 2004以降またはWindows 11を使用している
-- [ ] 64ビット版Windowsを使用している
-- [ ] 管理者権限でPowerShellを実行している
-
-#### ステップ2: 仮想化確認
-- [ ] タスクマネージャーで「仮想化: 有効」と表示されている
-- [ ] BIOS/UEFIでVT-x（Intel）またはAMD-V（AMD）が有効
-
-#### ステップ3: Windows機能確認
-- [ ] 「Linux用Windowsサブシステム」が有効
-- [ ] 「仮想マシンプラットフォーム」が有効
-- [ ] 各機能を有効化後にPCを再起動した
-
-#### ステップ4: WSL確認
-- [ ] `wsl --status`が正常に動作する
-- [ ] `wsl --update`で最新版に更新済み
-- [ ] `wsl --set-default-version 2`を実行済み
-
-#### ステップ5: 最終手段
-問題が解決しない場合：
-1. WSLを完全にアンインストール
-   ```powershell
-   wsl --shutdown
-   wsl --unregister Ubuntu
-   ```
-2. Windows機能を無効化してPC再起動
-3. Windows機能を再度有効化してPC再起動
-4. WSL2を最初からインストール
-
----
-
-### Ubuntu初期設定
-
-Ubuntuを初めて起動すると、ユーザー名とパスワードの設定を求められます：
+初回起動時の設定：
 
 ```bash
-# ユーザー名を入力（英数字小文字、スペース不可）
+# ユーザー名を入力（英数字小文字）
 Enter new UNIX username: yourname
 
-# パスワードを設定（入力時は表示されません）
+# パスワードを設定（表示されません）
 New password: 
 Retype new password: 
 
-# 設定完了メッセージ
-Installation successful!
-```
-
-### 基本パッケージの更新
-
-```bash
-# パッケージリストを最新に更新
+# 基本パッケージを更新
 sudo apt update && sudo apt upgrade -y
 
-# 開発に必要な基本ツールをインストール
+# 開発ツールをインストール
 sudo apt install -y git curl wget build-essential
-
-# 日本語環境の設定（任意）
-sudo apt install -y language-pack-ja
-sudo update-locale LANG=ja_JP.UTF-8
-```
-
-### VS CodeとWSL2の連携設定
-
-1. **VS Codeのインストール**（まだの場合）
-   - [公式サイト](https://code.visualstudio.com/)からダウンロード
-   - Windowsにインストール（WSL2内ではなく）
-
-2. **WSL拡張機能のインストール**
-   - VS Codeを起動
-   - 拡張機能（Ctrl+Shift+X）を開く
-   - 「WSL」で検索してインストール
-
-3. **WSL内のプロジェクトを開く**
-   ```bash
-   # WSL2（Ubuntu）内で実行
-   cd ~/projects/your-project
-   code .
-   ```
-
-### パフォーマンス最適化（推奨）
-
-#### Git操作が遅い場合の対処
-
-```bash
-# Windows側のファイル（/mnt/c/）ではなくWSL2内のファイルシステムを使用
-cd ~  # WSL2のホームディレクトリ
-mkdir -p projects
-cd projects
-# ここにプロジェクトを配置
-
-# 速度比較
-# 遅い: /mnt/c/Users/yourname/projects/
-# 速い: ~/projects/
 ```
 
 ---
 
-## 2️⃣ Gitのインストールと初期設定
+### 1.5 トラブルシューティング
 
-### Gitのインストール
+#### ❌ エラー 0x80370114
 
-#### Windows (WSL2内)
+**原因と解決方法：**
+
+| 原因 | 確認方法 | 解決方法 |
+|------|----------|----------|
+| 仮想化が無効 | タスクマネージャーで確認 | BIOSで有効化 |
+| Windows機能が無効 | `Get-WindowsOptionalFeature`で確認 | 1.2の手順を実行 |
+| WSLカーネルが古い | `wsl --status`で確認 | `wsl --update`を実行 |
+
+#### ❌ その他のエラー
+
+<details>
+<summary>クリックして詳細を表示</summary>
+
+**エラー 0x800701bc:**
+```powershell
+# WSL2カーネル未インストール
+wsl --update
+```
+
+**エラー 0x80370102:**
+```powershell
+# 仮想マシン起動失敗
+bcdedit /set hypervisorlaunchtype auto
+Restart-Computer
+```
+
+**エラー 0x80040326:**
+```powershell
+# WSL機能が無効
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all
+Restart-Computer
+```
+
+</details>
+
+---
+
+## 🔧 第2章: Git環境の構築
+
+### 📊 章の概要
+
+| 項目 | 内容 |
+|------|------|
+| **目的** | バージョン管理システムGitのセットアップ |
+| **所要時間** | 10-15分 |
+| **難易度** | ★☆☆ |
+| **前提条件** | WSL2完了（Windows）またはターミナルアクセス（Mac/Linux） |
+
+---
+
+### 2.1 Gitのインストール
+
+#### 🖥️ Windows（WSL2内で実行）
+
 ```bash
-# WSL2（Ubuntu）内で実行
+# WSL2のUbuntu内で実行
 sudo apt update
 sudo apt install -y git
 
 # インストール確認
 git --version
-# git version 2.34.1 のように表示されればOK
+# 出力例: git version 2.34.1
 ```
 
-#### Mac
+#### 🍎 Mac
+
 ```bash
 # Homebrewを使用（推奨）
 brew install git
 
-# または Xcodeコマンドラインツールをインストール
+# またはXcodeツール
 xcode-select --install
 ```
 
-#### Linux (Ubuntu/Debian)
+#### 🐧 Linux
+
 ```bash
-sudo apt update
-sudo apt install -y git
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y git
+
+# RHEL/CentOS
+sudo yum install -y git
 ```
 
-### Git初期設定
+---
 
-**必須設定**を行います：
+### 2.2 Git初期設定
+
+**必須設定の実行：**
 
 ```bash
-# ユーザー情報設定（必須）
-git config --global user.name "山田 太郎"  # あなたの名前
-git config --global user.email "yamada@sas-com.co.jp"  # 会社メールアドレス
+# ========== 基本情報設定 ==========
+# 名前（日本語可）
+git config --global user.name "山田 太郎"
 
-# エディタ設定
-git config --global core.editor "code --wait"  # VS Code
-# git config --global core.editor "vim"        # Vim
-# git config --global core.editor "nano"       # Nano
+# メールアドレス（会社用）
+git config --global user.email "yamada@sas-com.co.jp"
 
-# 日本語ファイル名の文字化け防止（必須）
+# ========== エディタ設定 ==========
+# VS Code を使用する場合
+git config --global core.editor "code --wait"
+
+# ========== 日本語対応 ==========
+# ファイル名の文字化け防止
 git config --global core.quotepath false
 
-# 改行コード設定
-# Windows (WSL2内)
+# ========== 改行コード設定 ==========
+# Windows/Mac/Linux共通
 git config --global core.autocrlf input
 git config --global core.eol lf
 
-# Mac/Linux
-git config --global core.autocrlf input
-
-# プッシュ設定
+# ========== 動作設定 ==========
 git config --global push.default current
-
-# プル設定（マージコミットを作成）
 git config --global pull.rebase false
-
-# カラー表示を有効化
 git config --global color.ui auto
 
-# 設定確認
+# ========== 設定確認 ==========
 git config --global --list
 ```
 
-### よく使うエイリアスの設定（任意）
+---
+
+### 2.3 エイリアス設定（任意）
 
 ```bash
-# 短縮コマンドを設定
+# よく使うコマンドの短縮形
 git config --global alias.st status
 git config --global alias.co checkout
 git config --global alias.br branch
@@ -787,345 +515,280 @@ git config --global alias.lg "log --graph --oneline --all"
 
 ---
 
-## 3️⃣ GitHubアカウントの作成
+## 🌐 第3章: GitHubアカウントの設定
 
-### 3.1 アカウント作成手順
+### 📊 章の概要
 
-1. **GitHubサイトにアクセス**
+| 項目 | 内容 |
+|------|------|
+| **目的** | GitHubアカウントの作成とセキュリティ設定 |
+| **所要時間** | 20-30分 |
+| **難易度** | ★☆☆ |
+| **重要事項** | 2FA設定は**必須** |
+
+---
+
+### 3.1 アカウント作成
+
+#### 新規作成の手順
+
+1. **GitHubにアクセス**
    ```
    https://github.com
    ```
 
-2. **Sign upをクリック**
-   - トップページ右上の「Sign up」ボタンをクリック
+2. **Sign up をクリック**
 
 3. **必要情報を入力**
 
-   | 項目 | 入力内容 | 注意点 |
-   |------|---------|--------|
-   | **Username** | 英数字とハイフン | 会社で使う場合は本名ベースを推奨（例: taro-yamada） |
-   | **Email** | 会社メールアドレス | 個人メールではなく会社メールを使用 |
-   | **Password** | 15文字以上推奨 | 大小英数字記号を含む強力なパスワード |
+   | 項目 | 入力内容 | 推奨例 |
+   |------|----------|--------|
+   | **Username** | 英数字とハイフン | taro-yamada |
+   | **Email** | 会社メールアドレス | yamada@sas-com.co.jp |
+   | **Password** | 15文字以上 | 大小英数字記号を含む |
 
-4. **メールアドレスの確認**
-   - 確認コード入力画面が表示される
-   - メールに届いた6桁のコードを入力
+4. **メール認証**
+   - 6桁のコードを入力
 
-5. **アカウントのカスタマイズ**（スキップ可能）
-   - チームで使うか：Yes, with my team
-   - 学生か教師か：No
-   - 興味のある分野：該当するものを選択
+#### 既存アカウントの利用
 
-### 3.2 既存アカウントを業務利用する場合
+<details>
+<summary>個人アカウントを業務利用する場合</summary>
 
-既に個人アカウントを持っている場合の選択肢：
-
-#### オプション1: 個人アカウントを業務でも使用（推奨）
-```markdown
-メリット：
-- 既存のコントリビューション履歴を維持
-- アカウント管理が簡単
-- OSSコントリビューションがしやすい
-
-設定変更：
+**設定手順：**
 1. Settings → Emails → Add email address
 2. 会社メールアドレスを追加
-3. 会社メールアドレスをPrimaryに設定（任意）
-```
+3. 必要に応じてPrimaryに設定
 
-#### オプション2: 業務用アカウントを新規作成
-```markdown
-メリット：
-- 個人と業務を完全分離
-- 退職時の処理が簡単
+**メリット：**
+- コントリビューション履歴を維持
+- アカウント管理が簡単
 
-デメリット：
-- アカウント切り替えが必要
-- SSH鍵の管理が複雑
-```
+</details>
 
 ---
 
-## 4️⃣ プロフィール設定
+### 3.2 プロフィール設定
 
-### 4.1 基本プロフィール設定
+**Settings → Profile で設定：**
 
-1. **プロフィールページにアクセス**
-   - 右上のアバター → Settings → Profile
-
-2. **必須項目の入力**
-
-   | 項目 | 設定内容 | 例 |
-   |------|---------|-----|
-   | **Name** | 本名（日本語可） | 山田 太郎 |
-   | **Bio** | 簡単な自己紹介 | Software Engineer at SAS Inc. |
-   | **Company** | 会社名 | @sas-com または エス・エー・エス株式会社 |
-   | **Location** | 勤務地 | Tokyo, Japan |
-   | **Email** | 公開メール | 表示する場合は会社メール |
-
-3. **プロフィール画像の設定**（推奨）
-   - 顔写真またはアバター画像をアップロード
-   - 推奨サイズ：400×400px以上
-   - ファイル形式：JPG、PNG
-
-### 4.2 プロフィールREADME作成（任意）
-
-```markdown
-1. 新規リポジトリを作成
-   - リポジトリ名：自分のユーザー名と同じ
-   - Public設定
-   - "Add a README file"にチェック
-
-2. README.md を編集
-```
-
-**README.md テンプレート例：**
-
-```markdown
-### Hi there 👋
-
-#### I'm Taro Yamada
-- 🏢 Software Engineer at S.A.S Corporation
-- 💻 Specializing in Web Development
-- 🌱 Currently learning Cloud Architecture
-- 📫 How to reach me: yamada@sas-com.co.jp
-
-#### Technologies & Tools
-![](https://img.shields.io/badge/Code-JavaScript-informational?style=flat&logo=javascript)
-![](https://img.shields.io/badge/Code-Python-informational?style=flat&logo=python)
-![](https://img.shields.io/badge/Tools-Docker-informational?style=flat&logo=docker)
-```
+| 項目 | 設定内容 | 例 |
+|------|----------|-----|
+| **Name** | 本名（日本語可） | 山田 太郎 |
+| **Bio** | 簡単な自己紹介 | Software Engineer at SAS Inc. |
+| **Company** | 会社名 | @sas-com |
+| **Location** | 勤務地 | Tokyo, Japan |
+| **Avatar** | プロフィール画像 | 400×400px以上推奨 |
 
 ---
 
-## 5️⃣ セキュリティ設定【重要】
+### 3.3 セキュリティ設定（最重要）
 
-### 5.1 2要素認証（2FA）の設定 ※必須
+#### 🔐 2要素認証（2FA）の設定 ※必須
 
-**2FAを設定しないと組織へ参加できません**
+> ⚠️ **重要**  
+> 2FAを設定しないと組織に参加できません
 
-1. **設定画面にアクセス**
+**設定手順：**
+
+1. **設定画面へアクセス**
    ```
    Settings → Password and authentication → Two-factor authentication
    ```
 
-2. **Enable two-factor authenticationをクリック**
+2. **Enable two-factor authentication をクリック**
 
-3. **認証方法の選択**
-
-   | 方法 | 推奨度 | 説明 |
-   |------|--------|------|
-   | **認証アプリ** | ⭐⭐⭐ | 最も安全（推奨） |
-   | **SMS** | ⭐⭐ | 電話番号が必要 |
-   | **セキュリティキー** | ⭐⭐⭐ | 物理キーが必要 |
-
-4. **認証アプリの設定（推奨）**
+3. **認証アプリを選択（推奨）**
 
    **推奨アプリ：**
-   - Google Authenticator（iOS/Android）
-   - Microsoft Authenticator（iOS/Android）
-   - Authy（iOS/Android/Desktop）
+   - Google Authenticator
+   - Microsoft Authenticator
+   - Authy
 
-   **設定手順：**
-   ```markdown
-   1. スマートフォンで認証アプリをインストール
-   2. アプリを開いて「+」または「アカウント追加」
-   3. QRコードをスキャン（またはシークレットキーを入力）
-   4. 表示された6桁のコードをGitHubに入力
-   5. リカバリーコードをダウンロードして安全に保管
-   ```
+4. **QRコードをスキャン**
 
-5. **リカバリーコードの保管**
-   ```markdown
-   ⚠️ 重要：必ず安全な場所に保管してください
-   - パスワードマネージャーに保存
-   - 印刷して施錠可能な場所に保管
-   - 会社の機密情報管理システムに登録
-   ```
+5. **6桁コードを入力**
 
-### 5.2 セキュリティログの確認
-
-定期的にセキュリティログを確認：
-```
-Settings → Security → Security log
-```
-
-異常なアクセスがないか確認してください。
+6. **リカバリーコードを保存**
+   
+   > ⚠️ **必ず安全な場所に保管してください**
+   - パスワードマネージャー
+   - 印刷して金庫
+   - 会社の機密情報管理システム
 
 ---
 
-## 6️⃣ SSH鍵の設定
+## 🔑 第4章: SSH接続の設定
 
-### 6.1 SSH鍵の生成
+### 📊 章の概要
 
-**Windows (WSL2で実行)：**
+| 項目 | 内容 |
+|------|------|
+| **目的** | GitHubへの安全な接続設定 |
+| **所要時間** | 10-15分 |
+| **難易度** | ★★☆ |
+| **前提条件** | GitHubアカウント作成済み |
+
+---
+
+### 4.1 SSH鍵の生成
+
+**WSL2/Mac/Linuxで実行：**
 
 ```bash
-# 1. SSH鍵を生成
+# SSH鍵を生成（メールアドレスは自分のものに変更）
 ssh-keygen -t ed25519 -C "yamada@sas-com.co.jp"
 
-# 以下のプロンプトが表示されたらEnterを押す
-# Enter file in which to save the key (/home/user/.ssh/id_ed25519): [Enter]
-# Enter passphrase (empty for no passphrase): [パスフレーズを入力 or Enter]
-# Enter same passphrase again: [同じパスフレーズを入力 or Enter]
+# 以下が表示されたらEnterを3回押す
+# Enter file in which to save the key: [Enter]
+# Enter passphrase: [Enter]
+# Enter same passphrase again: [Enter]
 
-# 2. SSH鍵が生成されたことを確認
+# 生成確認
 ls -la ~/.ssh/
-# id_ed25519（秘密鍵）とid_ed25519.pub（公開鍵）が存在することを確認
+# id_ed25519（秘密鍵）とid_ed25519.pub（公開鍵）を確認
 ```
 
-### 6.2 GitHubへのSSH鍵登録
+---
+
+### 4.2 GitHubへの登録
 
 ```bash
-# 1. 公開鍵の内容をコピー
-# WSL2で実行:
+# 公開鍵をコピー（WSL2の場合）
 cat ~/.ssh/id_ed25519.pub | clip.exe
 
-# または手動でコピー:
+# Mac/Linuxの場合
 cat ~/.ssh/id_ed25519.pub
-# 表示された内容を選択してコピー
+# 表示内容を手動でコピー
 ```
 
 **GitHub側の設定：**
 
-1. **SSH鍵設定画面にアクセス**
-   ```
-   Settings → SSH and GPG keys → New SSH key
-   ```
-
-2. **鍵情報を入力**
-   - **Title**: 識別しやすい名前（例：会社PC-WSL2）
+1. Settings → SSH and GPG keys → New SSH key
+2. 以下を入力：
+   - **Title**: 会社PC-WSL2（識別名）
    - **Key type**: Authentication Key
-   - **Key**: コピーした公開鍵をペースト
+   - **Key**: コピーした公開鍵
+3. Add SSH key をクリック
 
-3. **Add SSH keyをクリック**
+---
 
-### 6.3 接続テスト
+### 4.3 接続テスト
 
 ```bash
 # SSH接続テスト
 ssh -T git@github.com
 
-# 初回接続時の確認メッセージ
-# The authenticity of host 'github.com (xxx.xxx.xxx.xxx)' can't be established.
-# Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+# 初回接続時
+# Are you sure you want to continue connecting? → yes
 
-# 成功時のメッセージ
-# Hi username! You've successfully authenticated, but GitHub does not provide shell access.
-```
-
-### 6.4 複数アカウントを使い分ける場合
-
-**~/.ssh/config の設定：**
-
-```bash
-# 個人アカウント
-Host github.com-personal
-    HostName github.com
-    User git
-    IdentityFile ~/.ssh/id_ed25519_personal
-
-# 会社アカウント
-Host github.com-work
-    HostName github.com
-    User git
-    IdentityFile ~/.ssh/id_ed25519_work
-
-# 使用例
-# git clone git@github.com-work:sas-com/repository.git
+# 成功メッセージ
+# Hi username! You've successfully authenticated...
 ```
 
 ---
 
-## 7️⃣ 組織への参加
+## 🏢 第5章: 組織への参加と最終設定
 
-### 7.1 招待の受け取り
+### 📊 章の概要
+
+| 項目 | 内容 |
+|------|------|
+| **目的** | 組織参加と環境設定の完了 |
+| **所要時間** | 5-10分 |
+| **難易度** | ★☆☆ |
+| **前提条件** | 2FA設定完了 |
+
+---
+
+### 5.1 組織への参加
 
 1. **招待メールを確認**
-   - 件名：`[GitHub] You've been invited to join sas-com organization`
-   
-2. **招待リンクをクリック**
-   - メール内の「View invitation」ボタンをクリック
+   - 件名: `You've been invited to join sas-com`
 
-3. **招待を承認**
-   - 「Join sas-com」ボタンをクリック
+2. **View invitation をクリック**
 
-### 7.2 組織の設定確認
-
-**プロフィールの公開設定：**
-```
-組織ページ → People → 自分のアカウント → Public/Private選択
-```
-
-- **Public**: 組織メンバーであることを公開
-- **Private**: 組織メンバーであることを非公開
+3. **Join sas-com をクリック**
 
 ---
 
-## 8️⃣ 通知設定
+### 5.2 通知設定
 
-### 8.1 メール通知設定
-
-```
-Settings → Notifications → Email notification preferences
-```
+**Settings → Notifications で設定：**
 
 **推奨設定：**
 - ✅ Comments on Issues and Pull Requests
 - ✅ Pull Request reviews
 - ✅ Pull Request pushes
-- ⬜ Include your own updates（自分の更新は除外）
-
-### 8.2 Web通知設定
-
-```
-Settings → Notifications → Web and mobile notifications
-```
-
-重要な通知のみ受け取るように設定することを推奨。
+- ⬜ Include your own updates
 
 ---
 
-## 9️⃣ トラブルシューティング
+### 5.3 最終確認
 
-### よくある問題と解決方法
+#### ✅ 環境構築完了チェックリスト
 
-#### WSL2関連の問題
+**システム環境：**
+- [ ] WSL2が正常動作（Windows）
+- [ ] Gitがインストール済み
+- [ ] Git設定が完了
 
-##### Git操作が異常に遅い
-```markdown
-原因：
-- Windows側のファイルシステム（/mnt/c/）を使用している
-- WSL1を使用している
+**GitHub環境：**
+- [ ] GitHubにログイン可能
+- [ ] 2FAが有効
+- [ ] プロフィール設定完了
 
-解決方法：
-1. WSL2内のファイルシステムを使用
-   cd ~/projects  # /mnt/c/ ではなく
-2. WSL2へアップグレード
-   wsl --set-version Ubuntu 2
-```
+**接続環境：**
+- [ ] SSH接続テスト成功
+- [ ] 組織に参加済み
+- [ ] 通知設定完了
 
-##### 改行コードの問題でファイル全体が変更扱いになる
+**セキュリティ：**
+- [ ] リカバリーコード保管済み
+- [ ] 強力なパスワード設定済み
+
+---
+
+## ❓ 付録: トラブルシューティング
+
+### WSL2関連
+
+<details>
+<summary>🔧 Git操作が遅い</summary>
+
+**原因：** Windows側のファイル（/mnt/c/）を使用
+
+**解決方法：**
 ```bash
-# .gitattributesファイルを作成（プロジェクトルート）
-echo "* text=auto eol=lf" > .gitattributes
-git add .gitattributes
-git commit -m "chore: 改行コードをLFに統一"
-
-# 既存ファイルの改行コードを統一
-git add --renormalize .
-git commit -m "chore: 既存ファイルの改行コードを統一"
+# WSL2内のファイルシステムを使用
+cd ~/projects  # /mnt/c/ ではなく
 ```
+</details>
 
-#### 2FA設定後にログインできない
-```markdown
-解決方法：
-1. リカバリーコードを使用してログイン
+<details>
+<summary>🔧 エラー 0x80370114</summary>
+
+**解決手順：**
+1. タスクマネージャーで仮想化を確認
+2. BIOSで仮想化を有効化
+3. Windows機能を有効化
+4. PCを再起動
+</details>
+
+### GitHub関連
+
+<details>
+<summary>🔧 2FA後にログインできない</summary>
+
+**解決方法：**
+1. リカバリーコードを使用
 2. Settings → Password and authentication
-3. 2FAを一度無効化して再設定
-```
+3. 2FAを再設定
+</details>
 
-#### SSH接続が失敗する
+<details>
+<summary>🔧 SSH接続が失敗する</summary>
+
 ```bash
 # SSHエージェントを起動
 eval "$(ssh-agent -s)"
@@ -1133,127 +796,29 @@ eval "$(ssh-agent -s)"
 # 鍵を追加
 ssh-add ~/.ssh/id_ed25519
 
-# 詳細なデバッグ情報を表示
+# デバッグ情報を表示
 ssh -vT git@github.com
 ```
-
-#### Permission denied (publickey)
-```bash
-# 正しい鍵が使われているか確認
-ssh -vT git@github.com
-
-# 鍵の権限を修正
-chmod 600 ~/.ssh/id_ed25519
-chmod 644 ~/.ssh/id_ed25519.pub
-chmod 700 ~/.ssh
-```
-
-#### HyperV-KernelInt-VirtualDeviceについて質問される場合
-```markdown
-質問：
-「Get-WindowsOptionalFeature」のコマンド実行時に
-HyperV-KernelInt-VirtualDeviceが表示されるが、これは何か？
-
-回答：
-- Hyper-Vカーネル統合仮想デバイス機能
-- WSL2の動作には直接関係ない
-- 通常はDisabled（無効）のままで問題なし
-- 有効化したい場合は上記の詳細説明を参照
-
-対処：
-- WSL2を使うだけなら無視してOK
-- 有効化によるパフォーマンス向上は限定的
-- 問題が発生したら無効化して再起動
-```
-
-#### 組織に参加できない
-```markdown
-原因：
-- 2FAが設定されていない
-- メールアドレスが未確認
-- 招待の有効期限切れ
-
-解決：
-1. 2FAを設定
-2. メールアドレスを確認（Settings → Emails）
-3. 管理者に再招待を依頼
-```
+</details>
 
 ---
 
-## 🔐 セキュリティベストプラクティス
+## 📞 サポート情報
 
-### やるべきこと ✅
-
-1. **強力なパスワードを使用**
-   - 15文字以上
-   - 大小英数字記号を含む
-   - パスワードマネージャーの使用推奨
-
-2. **2FAを必ず有効化**
-   - 認証アプリの使用推奨
-   - リカバリーコードを安全に保管
-
-3. **定期的な確認**
-   - アクセスログの確認（月1回）
-   - SSH鍵の棚卸し（年2回）
-   - 権限の見直し（四半期ごと）
-
-4. **個人用トークンの管理**
-   - 最小限の権限のみ付与
-   - 有効期限を設定
-   - 不要になったら即削除
-
-### やってはいけないこと ❌
-
-1. **パスワードの使い回し**
-2. **2FAの無効化**
-3. **公共のPCでのログイン**
-4. **トークンのハードコード**
-5. **秘密鍵の共有**
-
----
-
-## 📚 参考リンク
-
-### GitHub公式ドキュメント
-- [GitHubアカウント作成](https://docs.github.com/ja/get-started/signing-up-for-github)
-- [2FA設定ガイド](https://docs.github.com/ja/authentication/securing-your-account-with-two-factor-authentication-2fa)
-- [SSH接続ガイド](https://docs.github.com/ja/authentication/connecting-to-github-with-ssh)
-
-### 社内ドキュメント
-- [全社GitHub運用ガイドライン](./README.md)
-- [新規参画者向けオンボーディング](./ONBOARDING.md)
-- [クイックリファレンス](./QUICK_REFERENCE.md)
-
----
-
-## 📞 サポート
-
-設定で困った場合の連絡先：
+### 連絡先
 
 | 内容 | 連絡先 | 対応時間 |
 |------|--------|----------|
-| アカウント作成支援 | SAS Github管理チーム (github@sas-com.com) | 平日 9:00-18:00 |
-| 技術的な質問 | SAS Github管理チーム (github@sas-com.com) | 平日 9:00-18:00 |
-| 組織への招待 | SAS Github管理チーム (github@sas-com.com) | 営業時間内 |
+| **通常サポート** | github@sas-com.com | 平日 9:00-18:00 |
+| **緊急対応** | github@sas-com.com | 24時間 |
+| **技術的質問** | github@sas-com.com | 平日 9:00-18:00 |
 
----
+### 関連ドキュメント
 
-## ✅ 最終チェックリスト
-
-アカウント設定が完了したら、以下を確認：
-
-- [ ] GitHubにログインできる
-- [ ] 2FAが有効になっている
-- [ ] SSH接続テストが成功する
-- [ ] 組織（sas-com）に参加している
-- [ ] プロフィール情報が設定されている
-- [ ] Git設定が完了している
-- [ ] メール通知が適切に設定されている
-- [ ] リカバリーコードを安全に保管している
-
-すべてチェックできたら、開発業務を開始できます！
+- [全社GitHub運用ガイドライン](../../README.md)
+- [新規参画者向けオンボーディング](../ONBOARDING.md)
+- [クイックリファレンス](../../QUICK_REFERENCE.md)
+- [緊急時対応マニュアル](../../EMERGENCY_RESPONSE.md)
 
 ---
 
