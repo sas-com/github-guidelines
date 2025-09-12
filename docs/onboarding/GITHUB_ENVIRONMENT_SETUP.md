@@ -1,24 +1,50 @@
-# GitHub アカウント作成・設定ガイド
+# GitHub 環境構築ガイド
 
 **エス・エー・エス株式会社**  
-*GitHubアカウントの作成から業務利用開始までの詳細手順*  
-*最終更新: 2025年9月5日*
+*開発環境のセットアップから GitHubアカウント設定まで完全ガイド*  
+*最終更新: 2025年9月12日*
 
 ## 📌 はじめに
 
-このガイドは、エス・エー・エス株式会社の業務でGitHubを利用するために必要なアカウント作成と初期設定の手順を説明します。
-セキュリティを重視した設定を含みますので、**必ず全ての手順を完了**してください。
+このガイドは、エス・エー・エス株式会社で GitHub を使った開発を始めるために必要な環境構築を、ゼロから完全にサポートします。
+Windows 環境での WSL2 セットアップから、Git の初期設定、GitHub アカウントの作成・設定まで、全ての手順を網羅しています。
+
+## ⏱️ 所要時間
+
+**環境構築全体: 約1-2時間**
+
+| ステップ | 所要時間 | 備考 |
+|---------|----------|------|
+| WSL2のインストール | 15-30分 | Windows必須、再起動含む |
+| Gitのインストールと初期設定 | 10-15分 | WSL2内で実施 |
+| GitHubアカウント作成と2FA設定 | 20-30分 | 既存アカウント利用可 |
+| SSH鍵の生成と登録 | 10-15分 | WSL2内で実施 |
+| 接続テスト | 5分 | 動作確認 |
 
 ---
 
 ## 📋 作業チェックリスト
 
-### 必須項目
-- [ ] GitHubアカウント作成
+### 環境構築（Windows必須）
+- [ ] WSL2のインストールと初期設定
+- [ ] Ubuntu（推奨）のセットアップ
+- [ ] VS Codeとの連携設定
+
+### Git環境設定
+- [ ] Gitのインストール（WSL2内）
+- [ ] Git初期設定（user.name, user.email等）
+- [ ] 日本語環境の設定
+
+### GitHubアカウント設定
+- [ ] GitHubアカウント作成（または既存アカウントの利用）
 - [ ] プロフィール設定
-- [ ] 2要素認証（2FA）設定
+- [ ] 2要素認証（2FA）設定 ※必須
 - [ ] メール通知設定
-- [ ] SSH鍵の生成と登録
+
+### SSH接続設定
+- [ ] SSH鍵の生成（ed25519推奨）
+- [ ] GitHubへのSSH鍵登録
+- [ ] 接続テストと動作確認
 - [ ] 組織への参加
 
 ### 推奨項目
@@ -28,9 +54,208 @@
 
 ---
 
-## 1️⃣ GitHubアカウントの作成
+## 1️⃣ WSL2のインストール（Windows環境必須）
 
-### 1.1 アカウント作成手順
+> 💡 **Mac/Linux ユーザーの方**: このセクションはスキップして「[2️⃣ Gitのインストールと初期設定](#2️⃣-gitのインストールと初期設定)」へ進んでください。
+
+### WSL2とは
+
+Windows Subsystem for Linux 2（WSL2）は、Windows上でLinux環境を動作させる仕組みです。
+開発において Bash コマンドや Linux ツールを使用するため、Windows 環境では必須となります。
+
+### システム要件
+
+- ✅ Windows 10 バージョン 2004以降（ビルド 19041以降）
+- ✅ Windows 11（全バージョン対応）
+
+### インストール手順
+
+#### 方法1: 簡単インストール（推奨）
+
+PowerShell を**管理者として実行**し、以下のコマンドを入力：
+
+```powershell
+# WSL2とUbuntuを一括インストール
+wsl --install
+
+# インストール完了後、PCを再起動
+# 再起動後、自動的にUbuntuのセットアップが開始されます
+```
+
+#### 方法2: 手動インストール（上記がエラーになる場合）
+
+1. **Windows機能の有効化**（PowerShell管理者で実行）：
+
+```powershell
+# WSL機能を有効化
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# 仮想マシン機能を有効化
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+# PCを再起動（必須）
+Restart-Computer
+```
+
+2. **再起動後、WSL2を既定バージョンに設定**：
+
+```powershell
+wsl --set-default-version 2
+```
+
+3. **Microsoft StoreからUbuntuをインストール**：
+   - Microsoft Storeを開く
+   - 「Ubuntu」または「Ubuntu 22.04 LTS」で検索
+   - インストールボタンをクリック
+
+### Ubuntu初期設定
+
+Ubuntuを初めて起動すると、ユーザー名とパスワードの設定を求められます：
+
+```bash
+# ユーザー名を入力（英数字小文字、スペース不可）
+Enter new UNIX username: yourname
+
+# パスワードを設定（入力時は表示されません）
+New password: 
+Retype new password: 
+
+# 設定完了メッセージ
+Installation successful!
+```
+
+### 基本パッケージの更新
+
+```bash
+# パッケージリストを最新に更新
+sudo apt update && sudo apt upgrade -y
+
+# 開発に必要な基本ツールをインストール
+sudo apt install -y git curl wget build-essential
+
+# 日本語環境の設定（任意）
+sudo apt install -y language-pack-ja
+sudo update-locale LANG=ja_JP.UTF-8
+```
+
+### VS CodeとWSL2の連携設定
+
+1. **VS Codeのインストール**（まだの場合）
+   - [公式サイト](https://code.visualstudio.com/)からダウンロード
+   - Windowsにインストール（WSL2内ではなく）
+
+2. **WSL拡張機能のインストール**
+   - VS Codeを起動
+   - 拡張機能（Ctrl+Shift+X）を開く
+   - 「WSL」で検索してインストール
+
+3. **WSL内のプロジェクトを開く**
+   ```bash
+   # WSL2（Ubuntu）内で実行
+   cd ~/projects/your-project
+   code .
+   ```
+
+### WSL2のトラブルシューティング
+
+#### WSL2が起動しない場合
+```powershell
+# PowerShell（管理者）で実行
+wsl --shutdown
+wsl --update
+wsl
+```
+
+#### 「仮想化が有効になっていません」エラー
+1. BIOS/UEFIで仮想化を有効化（Intel VT-x / AMD-V）
+2. タスクマネージャー → パフォーマンス → CPU で「仮想化: 有効」を確認
+
+---
+
+## 2️⃣ Gitのインストールと初期設定
+
+### Gitのインストール
+
+#### Windows (WSL2内)
+```bash
+# WSL2（Ubuntu）内で実行
+sudo apt update
+sudo apt install -y git
+
+# インストール確認
+git --version
+# git version 2.34.1 のように表示されればOK
+```
+
+#### Mac
+```bash
+# Homebrewを使用（推奨）
+brew install git
+
+# または Xcodeコマンドラインツールをインストール
+xcode-select --install
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install -y git
+```
+
+### Git初期設定
+
+**必須設定**を行います：
+
+```bash
+# ユーザー情報設定（必須）
+git config --global user.name "山田 太郎"  # あなたの名前
+git config --global user.email "yamada@sas-com.co.jp"  # 会社メールアドレス
+
+# エディタ設定
+git config --global core.editor "code --wait"  # VS Code
+# git config --global core.editor "vim"        # Vim
+# git config --global core.editor "nano"       # Nano
+
+# 日本語ファイル名の文字化け防止（必須）
+git config --global core.quotepath false
+
+# 改行コード設定
+# Windows (WSL2内)
+git config --global core.autocrlf input
+git config --global core.eol lf
+
+# Mac/Linux
+git config --global core.autocrlf input
+
+# プッシュ設定
+git config --global push.default current
+
+# プル設定（マージコミットを作成）
+git config --global pull.rebase false
+
+# カラー表示を有効化
+git config --global color.ui auto
+
+# 設定確認
+git config --global --list
+```
+
+### よく使うエイリアスの設定（任意）
+
+```bash
+# 短縮コマンドを設定
+git config --global alias.st status
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.lg "log --graph --oneline --all"
+```
+
+---
+
+## 3️⃣ GitHubアカウントの作成
+
+### 3.1 アカウント作成手順
 
 1. **GitHubサイトにアクセス**
    ```
@@ -57,7 +282,7 @@
    - 学生か教師か：No
    - 興味のある分野：該当するものを選択
 
-### 1.2 既存アカウントを業務利用する場合
+### 3.2 既存アカウントを業務利用する場合
 
 既に個人アカウントを持っている場合の選択肢：
 
@@ -87,9 +312,9 @@
 
 ---
 
-## 2️⃣ プロフィール設定
+## 4️⃣ プロフィール設定
 
-### 2.1 基本プロフィール設定
+### 4.1 基本プロフィール設定
 
 1. **プロフィールページにアクセス**
    - 右上のアバター → Settings → Profile
@@ -109,7 +334,7 @@
    - 推奨サイズ：400×400px以上
    - ファイル形式：JPG、PNG
 
-### 2.2 プロフィールREADME作成（任意）
+### 4.2 プロフィールREADME作成（任意）
 
 ```markdown
 1. 新規リポジトリを作成
@@ -139,9 +364,9 @@
 
 ---
 
-## 3️⃣ セキュリティ設定【重要】
+## 5️⃣ セキュリティ設定【重要】
 
-### 3.1 2要素認証（2FA）の設定 ※必須
+### 5.1 2要素認証（2FA）の設定 ※必須
 
 **2FAを設定しないと組織へ参加できません**
 
@@ -184,7 +409,7 @@
    - 会社の機密情報管理システムに登録
    ```
 
-### 3.2 セキュリティログの確認
+### 5.2 セキュリティログの確認
 
 定期的にセキュリティログを確認：
 ```
@@ -195,9 +420,9 @@ Settings → Security → Security log
 
 ---
 
-## 4️⃣ SSH鍵の設定
+## 6️⃣ SSH鍵の設定
 
-### 4.1 SSH鍵の生成
+### 6.1 SSH鍵の生成
 
 **Windows (WSL2で実行)：**
 
@@ -215,7 +440,7 @@ ls -la ~/.ssh/
 # id_ed25519（秘密鍵）とid_ed25519.pub（公開鍵）が存在することを確認
 ```
 
-### 4.2 GitHubへのSSH鍵登録
+### 6.2 GitHubへのSSH鍵登録
 
 ```bash
 # 1. 公開鍵の内容をコピー
@@ -241,7 +466,7 @@ cat ~/.ssh/id_ed25519.pub
 
 3. **Add SSH keyをクリック**
 
-### 4.3 接続テスト
+### 6.3 接続テスト
 
 ```bash
 # SSH接続テスト
@@ -255,7 +480,7 @@ ssh -T git@github.com
 # Hi username! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
-### 4.4 複数アカウントを使い分ける場合
+### 6.4 複数アカウントを使い分ける場合
 
 **~/.ssh/config の設定：**
 
@@ -278,53 +503,9 @@ Host github.com-work
 
 ---
 
-## 5️⃣ Git設定
+## 7️⃣ 組織への参加
 
-### 5.1 グローバル設定
-
-```bash
-# ユーザー情報設定
-git config --global user.name "山田 太郎"
-git config --global user.email "yamada@sas-com.co.jp"
-
-# エディタ設定
-git config --global core.editor "code --wait"  # VS Code
-# git config --global core.editor "vim"         # Vim
-# git config --global core.editor "nano"        # Nano
-
-# 日本語ファイル名の文字化け防止
-git config --global core.quotepath false
-
-# 改行コード設定
-# Windows（WSL2）
-git config --global core.autocrlf true
-
-# プッシュ設定
-git config --global push.default current
-
-# プル設定
-git config --global pull.rebase false
-
-# 設定確認
-git config --global --list
-```
-
-### 5.2 認証情報の管理
-
-**認証ヘルパーの設定：**
-
-```bash
-# Windows（WSL2）
-git config --global credential.helper store
-# または
-git config --global credential.helper cache  # 一時的にメモリに保存
-```
-
----
-
-## 6️⃣ 組織への参加
-
-### 6.1 招待の受け取り
+### 7.1 招待の受け取り
 
 1. **招待メールを確認**
    - 件名：`[GitHub] You've been invited to join sas-com organization`
@@ -335,7 +516,7 @@ git config --global credential.helper cache  # 一時的にメモリに保存
 3. **招待を承認**
    - 「Join sas-com」ボタンをクリック
 
-### 6.2 組織の設定確認
+### 7.2 組織の設定確認
 
 **プロフィールの公開設定：**
 ```
@@ -347,9 +528,9 @@ git config --global credential.helper cache  # 一時的にメモリに保存
 
 ---
 
-## 7️⃣ 通知設定
+## 8️⃣ 通知設定
 
-### 7.1 メール通知設定
+### 8.1 メール通知設定
 
 ```
 Settings → Notifications → Email notification preferences
@@ -361,7 +542,7 @@ Settings → Notifications → Email notification preferences
 - ✅ Pull Request pushes
 - ⬜ Include your own updates（自分の更新は除外）
 
-### 7.2 Web通知設定
+### 8.2 Web通知設定
 
 ```
 Settings → Notifications → Web and mobile notifications
@@ -371,9 +552,36 @@ Settings → Notifications → Web and mobile notifications
 
 ---
 
-## 8️⃣ トラブルシューティング
+## 9️⃣ トラブルシューティング
 
 ### よくある問題と解決方法
+
+#### WSL2関連の問題
+
+##### Git操作が異常に遅い
+```markdown
+原因：
+- Windows側のファイルシステム（/mnt/c/）を使用している
+- WSL1を使用している
+
+解決方法：
+1. WSL2内のファイルシステムを使用
+   cd ~/projects  # /mnt/c/ ではなく
+2. WSL2へアップグレード
+   wsl --set-version Ubuntu 2
+```
+
+##### 改行コードの問題でファイル全体が変更扱いになる
+```bash
+# .gitattributesファイルを作成（プロジェクトルート）
+echo "* text=auto eol=lf" > .gitattributes
+git add .gitattributes
+git commit -m "chore: 改行コードをLFに統一"
+
+# 既存ファイルの改行コードを統一
+git add --renormalize .
+git commit -m "chore: 既存ファイルの改行コードを統一"
+```
 
 #### 2FA設定後にログインできない
 ```markdown
@@ -421,7 +629,7 @@ chmod 700 ~/.ssh
 
 ---
 
-## 9️⃣ セキュリティベストプラクティス
+## 🔐 セキュリティベストプラクティス
 
 ### やるべきこと ✅
 
@@ -497,4 +705,4 @@ chmod 700 ~/.ssh
 
 ---
 
-**© 2025 エス・エー・エス株式会社 - GitHubアカウント作成・設定ガイド**
+**© 2025 エス・エー・エス株式会社 - GitHub環境構築ガイド**

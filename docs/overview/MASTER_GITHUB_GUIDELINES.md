@@ -106,7 +106,7 @@ graph TB
 - **プロフィール**: 実名・所属部署明記
 - **通知設定**: 適切なレベルに調整
 
-詳細: [GITHUB_ACCOUNT_SETUP.md](./GITHUB_ACCOUNT_SETUP.md)
+詳細: [GITHUB_ENVIRONMENT_SETUP.md](../onboarding/GITHUB_ENVIRONMENT_SETUP.md)
 
 ### 2.2 組織アーキテクチャ
 

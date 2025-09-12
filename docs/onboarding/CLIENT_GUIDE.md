@@ -45,7 +45,7 @@ GitHubは、ソフトウェア開発プロジェクトの管理プラットフ�
    - Email（メールアドレス）
    - Password（パスワード）
 
-📖 **詳細な手順が必要な場合**: [GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)を参照
+📖 **詳細な手順が必要な場合**: [GitHub環境構築ガイド](./GITHUB_ENVIRONMENT_SETUP.md)を参照
 
 ### 2. プロジェクトへの招待
 

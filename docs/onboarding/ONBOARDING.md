@@ -77,188 +77,23 @@ graph TD
 
 ---
 
-## 🖥️ 事前準備: WSL2のインストール（Windows必須）
-
-### WSL2とは
-Windows Subsystem for Linux 2（WSL2）は、Windows上でLinux環境を動作させる仕組みです。
-開発においてBashコマンドを使用するため、Windows環境では必須となります。
-
-### インストール手順
-
-#### 1. システム要件の確認
-```markdown
-✅ Windows 10 バージョン 2004以降（ビルド 19041以降）
-✅ Windows 11
-```
-
-#### 2. WSL2のインストール
-
-**方法1: 簡単インストール（推奨）**
-
-PowerShellを管理者として実行し、以下のコマンドを入力：
-
-```powershell
-# WSL2とUbuntuをインストール
-wsl --install
-
-# PCを再起動
-# 再起動後、自動的にUbuntuのセットアップが開始されます
-```
-
-**方法2: 手動インストール**
-
-1. Windows機能の有効化（PowerShell管理者で実行）：
-```powershell
-# WSL機能を有効化
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-
-# 仮想マシン機能を有効化
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-
-# PCを再起動
-```
-
-2. WSL2を既定バージョンに設定：
-```powershell
-wsl --set-default-version 2
-```
-
-3. Microsoft StoreからUbuntuをインストール：
-   - Microsoft Storeを開く
-   - 「Ubuntu」で検索
-   - 「Ubuntu 22.04 LTS」をインストール
-
-#### 3. 初期設定
-
-Ubuntuを起動し、ユーザー名とパスワードを設定：
-
-```bash
-# ユーザー名を入力（英数字小文字）
-Enter new UNIX username: yourname
-
-# パスワードを設定（入力時は表示されません）
-Enter new UNIX password: 
-Retype new UNIX password:
-```
-
-#### 4. 基本的なセットアップ
-
-```bash
-# パッケージを最新に更新
-sudo apt update && sudo apt upgrade -y
-
-# 開発に必要な基本ツールをインストール
-sudo apt install -y git curl wget build-essential
-
-# 日本語環境の設定
-sudo apt install -y language-pack-ja
-sudo update-locale LANG=ja_JP.UTF-8
-```
-
-### VS CodeとWSL2の連携
-
-1. VS Codeをインストール（まだの場合）
-2. VS Codeの拡張機能「WSL」をインストール
-3. WSL内のプロジェクトを開く：
-```bash
-# WSL内で
-code .
-```
-
----
-
 ## 📅 Day 1-3: 環境構築
 
 ### ✅ チェックリスト
 
-#### 1. GitHubアカウント作成
-- [ ] GitHubアカウントを作成（既にある場合はスキップ）
-- [ ] プロフィール設定（名前、アバター画像）
-- [ ] **重要**: 2要素認証（2FA）を有効化
+#### 1. 環境構築（所要時間: 約1-2時間）
+- [ ] WSL2のインストール（Windows必須）
+- [ ] Gitのインストールと初期設定
+- [ ] GitHubアカウント作成と2FA設定
+- [ ] SSH鍵の生成と登録
+- [ ] 接続テスト
 
-📖 **詳細手順**: [GitHubアカウント作成・設定ガイド](./GITHUB_ACCOUNT_SETUP.md)を参照
+📖 **完全な環境構築手順**: [GitHub環境構築ガイド](./GITHUB_ENVIRONMENT_SETUP.md)を参照
 
 #### 2. 組織への参加
 - [ ] 招待メールを確認
 - [ ] エス・エー・エス株式会社のOrganizationに参加
 - [ ] 所属チームの確認
-
-#### 3. 開発環境セットアップ
-- [ ] WSL2をインストール（Windows環境）
-- [ ] Gitをインストール
-- [ ] エディタをセットアップ（VS Code推奨）
-- [ ] ターミナル環境を準備
-
-### 🔧 Git初期設定
-
-**WSL2で実行：**
-
-```bash
-# ユーザー情報設定
-git config --global user.name "山田 太郎"
-git config --global user.email "yamada@sas-com.co.jp"
-
-# エディタ設定（VS Codeの場合）
-git config --global core.editor "code --wait"
-
-# 改行コード設定（WSL2内）
-git config --global core.autocrlf input
-
-# 日本語ファイル名の文字化け防止
-git config --global core.quotepath false
-
-# 設定確認
-git config --global --list
-```
-
-### 🔑 SSH鍵の設定
-
-**WSL2で実行：**
-
-```bash
-# SSH鍵の生成
-ssh-keygen -t ed25519 -C "yamada@sas-com.co.jp"
-# ed25519: RSAより高速で安全、GitHubが推奨する現代的な暗号化アルゴリズム
-# Enterを3回押してデフォルト設定で作成
-
-# SSH鍵の確認
-ls -la ~/.ssh/
-# id_ed25519（秘密鍵）とid_ed25519.pub（公開鍵）が作成される
-
-# 公開鍵を表示
-cat ~/.ssh/id_ed25519.pub
-# 表示された内容を全てコピー（ssh-ed25519から最後まで）
-
-# GitHubに登録
-# 1. GitHubにログインし、右上のプロフィール画像をクリック
-# 2. ドロップダウンメニューから「Settings」を選択
-# 3. 左側のサイドバーで「SSH and GPG keys」をクリック
-# 4. 緑色の「New SSH key」ボタンをクリック
-# 5. SSH key追加画面で以下を入力：
-#    - Title: "会社PC - WSL2" など識別できる名前を入力
-#    - Key type: "Authentication Key" を選択（デフォルト）
-#    - Key: コピーした公開鍵の全文をペースト
-#      （ssh-ed25519 から最後のメールアドレスまで全て）
-# 6. 緑色の「Add SSH key」ボタンをクリック
-# 7. GitHubのパスワード入力を求められたら入力して確認
-
-# 接続テスト
-ssh -T git@github.com
-# "Hi username! You've successfully authenticated..." と表示されれば成功
-```
-
-**Windows環境でSSHエラーが出る場合：**
-
-```bash
-# ssh-agentを起動
-eval "$(ssh-agent -s)"
-
-# SSH鍵を追加
-ssh-add ~/.ssh/id_ed25519
-
-# 再度接続テスト
-ssh -T git@github.com
-```
 
 ---
 
@@ -590,48 +425,9 @@ git push origin feature/123-initial-task
 
 > ⚠️ **重要**: 以下のトラブルシューティング操作の内容が理解できない場合や、実行結果に不安がある場合は、**実行する前に必ずサポート窓口に連絡してください**。不適切な操作はプロジェクトデータの損失やチーム開発への悪影響を引き起こす可能性があります。
 
-### WSL2特有のトラブルシューティング
+### トラブルシューティング
 
-#### WSL2が起動しない
-```powershell
-# PowerShell（管理者）で実行
-wsl --shutdown
-wsl --update
-wsl
-```
-
-#### Git操作が遅い
-```bash
-# WSL2内のファイルシステムを使用する
-cd ~/projects  # /mnt/c/ではなくホームディレクトリ以下を使用
-```
-
-#### 改行コードの問題（重要）
-> ⚠️ **注意**: この問題はプロジェクト全体に影響する可能性があります。チーム全員のコードに改行コードの差異が発生し、不要なコンフリクトやレビューの混乱を引き起こします。
-
-**問題の症状:**
-- ファイル全体が変更されたように見える（実際は改行コードの違いのみ）
-- 他のメンバーとのコンフリクトが頻発する
-- PR作成時に意図しない大量の変更が表示される
-
-**解決方法:**
-```bash
-# プロジェクトルートで実行（チームメンバーと相談後）
-echo "* text=auto eol=lf" > .gitattributes
-git add .gitattributes
-git commit -m "chore: 改行コードをLFに統一"
-
-# 既存ファイルの改行コードを統一
-git add --renormalize .
-git commit -m "chore: 既存ファイルの改行コードを統一"
-```
-
-**予防策:**
-```bash
-# Git初期設定で改行コード自動変換を設定（WSL2内）
-git config --global core.autocrlf input
-git config --global core.eol lf
-```
+> 📖 **WSL2やGit関連のトラブルシューティング**: 詳細は[GitHub環境構築ガイド](./GITHUB_ENVIRONMENT_SETUP.md#9️⃣-トラブルシューティング)を参照
 
 ### よくあるGitトラブルと解決法
 
@@ -717,13 +513,15 @@ graph TD
 
 ## 📝 オンボーディングチェックリスト
 
-### Day 1-3
-- [ ] WSL2インストール（Windows環境）
-- [ ] GitHubアカウント作成
-- [ ] 2FA有効化
+### Day 1-3 環境構築
+- [ ] [GitHub環境構築ガイド](./GITHUB_ENVIRONMENT_SETUP.md)に従って完全セットアップ
+  - [ ] WSL2インストール（Windows環境）
+  - [ ] Gitインストールと初期設定
+  - [ ] GitHubアカウント作成
+  - [ ] 2FA有効化
+  - [ ] SSH鍵設定
+  - [ ] 接続テスト完了
 - [ ] Organization参加
-- [ ] Git初期設定
-- [ ] SSH鍵設定
 - [ ] VS Code + WSL拡張機能セットアップ
 
 ### Week 1
@@ -748,7 +546,7 @@ graph TD
 
 ### 1ヶ月後の目標
 ```markdown
-✅ WSL2環境でスムーズに開発できる
+✅ 環境構築が完全に完了し、スムーズに開発できる
 ✅ 独立して簡単なタスクを完了できる
 ✅ PRの作成からマージまでを理解している
 ✅ チームの開発フローに馴染んでいる

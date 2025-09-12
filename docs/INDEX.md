@@ -28,7 +28,7 @@
 ### onboarding
 
 - [CLIENT_GUIDE.md](./onboarding/CLIENT_GUIDE.md)
-- [GITHUB_ACCOUNT_SETUP.md](./onboarding/GITHUB_ACCOUNT_SETUP.md)
+- [GITHUB_ENVIRONMENT_SETUP.md](./onboarding/GITHUB_ENVIRONMENT_SETUP.md)
 - [ONBOARDING.md](./onboarding/ONBOARDING.md)
 - [PROJECT_GUIDELINE_TEMPLATE.md](./onboarding/PROJECT_GUIDELINE_TEMPLATE.md)
 

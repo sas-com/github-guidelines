@@ -242,92 +242,43 @@ git push origin --force --all
 
 ---
 
-## 🔗 よく使うコマンド集
+## 🔗 よく使うGitコマンド
 
-### ブランチ関連
+> 📖 **詳細な環境構築手順**: [GitHub環境構築ガイド](../onboarding/GITHUB_ENVIRONMENT_SETUP.md)を参照
 
-```bash
-# ブランチ一覧
-git branch -a
-
-# ブランチ切り替え
-git checkout branch-name
-
-# ブランチ作成して切り替え
-git checkout -b new-branch
-
-# ブランチ削除（ローカル）
-git branch -d branch-name
-
-# ブランチ削除（リモート）
-git push origin --delete branch-name
-
-# ブランチ名変更
-git branch -m old-name new-name
-```
-
-### 変更の取り消し
+### 基本コマンド（日常使用）
 
 ```bash
-# ファイルの変更を取り消し
-git checkout -- file-name
-
-# ステージングを取り消し
-git reset HEAD file-name
-
-# すべての変更を破棄
-git reset --hard HEAD
-```
-
-### 履歴確認
-
-```bash
-# コミット履歴（簡潔）
+# 状態確認
+git status
 git log --oneline -10
 
-# コミット履歴（グラフ付き）
-git log --graph --oneline --all
+# ブランチ操作
+git checkout -b feature/new-feature  # 新規作成
+git checkout branch-name            # 切り替え
+git branch -a                      # 一覧表示
 
-# 特定ファイルの履歴
-git log -p file-name
-
-# 誰が変更したか確認
-git blame file-name
+# コミット関連
+git add .
+git commit -m "type: message"
+git push origin branch-name
 ```
 
-### リモート操作
+### トラブルシューティング用
 
 ```bash
-# リモート情報確認
-git remote -v
+# 変更の取り消し
+git checkout -- file-name          # ファイル変更を元に戻す
+git reset --soft HEAD^             # コミット取り消し（変更は残る）
+git reset --hard HEAD              # 全変更破棄（注意）
 
-# 最新情報取得（マージなし）
-git fetch origin
+# Stash（一時退避）
+git stash                          # 変更を退避
+git stash pop                      # 退避を戻す
+git stash list                     # 退避リスト
 
-# 特定ブランチをプル
-git pull origin branch-name
-
-# 強制プッシュ（危険！）
-git push --force origin branch-name
-```
-
-### 一時退避（stash）
-
-```bash
-# 現在の変更を一時退避
-git stash
-
-# 退避した変更を戻す
-git stash pop
-
-# 退避リストを確認
-git stash list
-
-# 特定の退避を適用
-git stash apply stash@{0}
-
-# 退避をクリア
-git stash clear
+# コミット修正（push前のみ）
+git commit --amend -m "新しいメッセージ"
 ```
 
 ---
