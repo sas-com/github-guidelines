@@ -676,7 +676,8 @@ sudo yum install -y git
 ```bash
 # ========== 基本情報設定 ==========
 # 名前（英語推奨：国際チーム連携、ASCII互換性、GitHub表示最適化のため）
-git config --global user.name "Taro Yamada"
+# GitHubユーザー名と同じ形式を使用: [名英字]-[姓英字]
+git config --global user.name "taro-yamada"
 
 # メールアドレス（会社用、標準ドメイン使用）
 git config --global user.email "yamada@sas-com.com"
@@ -707,12 +708,12 @@ git config --global --list
 
 **名前設定（user.name）について：**
 - ✅ **英語名を強く推奨**：国際チーム連携、ASCII互換性、GitHub表示最適化
-- ✅ **推奨パターン**：
+- ✅ **推奨パターン**：GitHubユーザー名と同じ `[名英字]-[姓英字]` 形式
   ```bash
-  # 良い例
-  git config --global user.name "Taro Yamada"
-  git config --global user.name "Hanako Sato"
-  git config --global user.name "Kenji Tanaka"
+  # 良い例（GitHubユーザー名と一致する形式）
+  git config --global user.name "taro-yamada"
+  git config --global user.name "hanako-sato"
+  git config --global user.name "kenji-tanaka"
   ```
 - ⚠️ **使用可能だが推奨しない**：
   ```bash
@@ -739,7 +740,7 @@ git config --global --list
   ```
 
 **設定の理由：**
-- **English名**: GitHubでの表示、国際チーム連携、文字エンコーディング問題回避
+- **English名（ハイフン形式）**: GitHubユーザー名との一致、国際チーム連携、文字エンコーディング問題回避、統一的な識別子管理
 - **標準ドメイン**: セキュリティポリシー統一、管理体制の一元化、将来的なシステム統合
 
 ---
