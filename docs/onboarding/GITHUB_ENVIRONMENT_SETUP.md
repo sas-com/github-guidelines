@@ -418,9 +418,9 @@ Restart-Computer
 
 ---
 
-### 1.6 Windows Terminal の活用（強く推奨）
+### 1.6 Windows Terminal の活用（推奨）
 
-> 💡 **Windows Terminal について**  
+> 💡 **Windows Terminal について**
 > Windows Terminal は Microsoft が開発した新しいターミナルアプリケーションで、PowerShell と WSL2 の両方で優れた体験を提供します。
 
 #### 📊 Windows Terminal の利点
@@ -445,7 +445,10 @@ Restart-Computer
 - 複数のリポジトリを並行作業
 - ログ出力の見やすさが大幅改善
 
-#### 📥 インストール方法
+#### 📥 インストール方法（3つの方法から選択）
+
+> 📌 **インストール方法について**
+> Windows Terminal のインストールには **3つの方法** があります。お使いの環境に応じて、いずれか1つを選択してください。
 
 **方法A: Microsoft Store（推奨）**
 
@@ -475,6 +478,10 @@ winget install --id Microsoft.WindowsTerminal -e
 
 #### ⚙️ 基本設定（Git/WSL2最適化）
 
+> ⚠️ **重要な注意事項**
+> 以下の設定はあくまで **参考例** です。実際の設定は、お使いのPC環境や個人の好みによって異なります。
+> 特にファイルパスやユーザー名の部分は、ご自身の環境に合わせて変更してください。
+
 **設定ファイルの場所:**
 ```
 Ctrl + , で設定画面を開く
@@ -482,7 +489,7 @@ Ctrl + , で設定画面を開く
 %LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
 ```
 
-**推奨設定項目:**
+**推奨設定項目（参考例）:**
 
 ```json
 {
@@ -778,9 +785,31 @@ git config --global alias.lg "log --graph --oneline --all"
 
    | 項目 | 入力内容 | 推奨例 |
    |------|----------|--------|
-   | **Username** | 英数字とハイフン | taro-yamada |
+   | **Username** | 英数字とハイフン<br/>**形式: [名]-[姓]** | taro-yamada<br/>hanako-sato<br/>kenji-tanaka |
    | **Email** | 会社メールアドレス | yamada@sas-com.com |
    | **Password** | 15文字以上 | 大小英数字記号を含む |
+
+   > 📝 **Username設定ガイドライン**
+   >
+   > **推奨形式:** `[名英字]-[姓英字]`（例：taro-yamada）
+   >
+   > **なぜこの形式を推奨するのか：**
+   > - **一貫性の確保**: 組織内で統一されたネーミングルールによる管理の容易さ
+   > - **国際的な可読性**: グローバルチームやオープンソースプロジェクトでの認識しやすさ
+   > - **Git設定との整合性**: user.name の英語名設定（Taro Yamada）と一致
+   > - **プロフェッショナルな印象**: ビジネス環境での信頼性向上
+   >
+   > **具体例：**
+   > - ✅ **良い例**:
+   >   - `taro-yamada` （山田太郎）
+   >   - `hanako-sato` （佐藤花子）
+   >   - `kenji-tanaka` （田中健二）
+   >   - `yuki-suzuki` （鈴木由紀）
+   > - ⚠️ **避けるべき例**:
+   >   - `yamadataro` （ハイフンなし、読みにくい）
+   >   - `t-yamada` （イニシャルのみ、識別困難）
+   >   - `taro123` （姓なし、プロフェッショナルでない）
+   >   - `cooldev2025` （ニックネーム形式）
 
 4. **メール認証**
    - 6桁のコードを入力
