@@ -252,36 +252,6 @@ flowchart TD
 | プロジェクト参加 | **プロジェクトリーダー** | プロジェクト内 | 開発環境・業務理解 |
 | 独立移行 | **メンター** | チーム内 | 継続的な技術指導 |
 
-### 📋 フローチャート内参照ドキュメント対応表
-
-| フェーズ | ステップ | 📖 参照ドキュメント | 詳細内容 |
-|---------|----------|---------------------|----------|
-| **環境構築** | WSL2インストール | [GITHUB_ENVIRONMENT_SETUP.md](./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md) | WSL2セットアップ手順、エラー対処法 |
-| | Git環境設定 | [GITHUB_ENVIRONMENT_SETUP.md](./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md) | Git設定コマンド、グローバル設定 |
-| | GitHubアカウント | [GITHUB_ENVIRONMENT_SETUP.md](./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md) | アカウント作成、プロフィール設定 |
-| | 2FA/SSH鍵設定 | [GITHUB_ENVIRONMENT_SETUP.md](./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md) | セキュリティ設定、SSH鍵生成 |
-| | トラブルシューティング | [TROUBLESHOOTING.md](./docs/reference/TROUBLESHOOTING.md) | 環境構築エラー対処 |
-| **組織参加** | Organization招待 | [ONBOARDING.md](./docs/onboarding/ONBOARDING.md) | 招待承認手順 |
-| | チーム配属 | [ONBOARDING.md](./docs/onboarding/ONBOARDING.md) | チーム参加方法 |
-| | 基本ドキュメント確認 | [MASTER_GITHUB_GUIDELINES.md](./docs/overview/MASTER_GITHUB_GUIDELINES.md) | 統合ガイドライン全体像 |
-| **基礎学習** | Git基礎（初心者） | [QUICK_REFERENCE.md](./docs/reference/QUICK_REFERENCE.md) | 基本コマンド早見表 |
-| | 社内ルール（経験者） | [MASTER_GITHUB_GUIDELINES.md](./docs/overview/MASTER_GITHUB_GUIDELINES.md) | 詳細なルール説明 |
-| | 練習リポジトリ | [ONBOARDING.md](./docs/onboarding/ONBOARDING.md) | トレーニング手順 |
-| | PR作成練習 | [PR_REVIEW_GUIDELINES.md](./docs/workflow/PR_REVIEW_GUIDELINES.md) | PR作成ガイドライン |
-| | コンフリクト解決 | [TROUBLESHOOTING.md](./docs/reference/TROUBLESHOOTING.md) | マージコンフリクト対処法 |
-| **ルール理解** | コミット規約 | [COMMIT_CONVENTION_GUIDE.md](./docs/workflow/COMMIT_CONVENTION_GUIDE.md) | メッセージフォーマット |
-| | ブランチ戦略 | [BRANCH_MANAGEMENT_RULES.md](./docs/workflow/BRANCH_MANAGEMENT_RULES.md) | ブランチ命名規則 |
-| | セキュリティ | [GITHUB_SECURITY_BEST_PRACTICES.md](./docs/security/GITHUB_SECURITY_BEST_PRACTICES.md) | セキュリティ対策 |
-| **プロジェクト参加** | リポジトリクローン | [QUICK_REFERENCE.md](./docs/reference/QUICK_REFERENCE.md) | クローン方法（SSH/HTTPS） |
-| | 開発環境構築 | プロジェクト固有README | プロジェクト別設定 |
-| | 環境サポート | [TROUBLESHOOTING.md](./docs/reference/TROUBLESHOOTING.md) | 開発環境エラー解決 |
-| **メンタリング** | Issue割り当て | [ISSUE_PROJECT_MANAGEMENT_GUIDE.md](./docs/management/ISSUE_PROJECT_MANAGEMENT_GUIDE.md) | Issue運用方法 |
-| | 開発実装 | [BRANCH_MANAGEMENT_RULES.md](./docs/workflow/BRANCH_MANAGEMENT_RULES.md) | ブランチ運用ルール |
-| | PR作成 | [PR_REVIEW_GUIDELINES.md](./docs/workflow/PR_REVIEW_GUIDELINES.md) | PR作成手順 |
-| | コードレビュー | [PR_REVIEW_CHECKLIST.md](./docs/workflow/PR_REVIEW_CHECKLIST.md) | レビュー観点 |
-| | 修正対応 | [PR_REVIEW_GUIDELINES.md](./docs/workflow/PR_REVIEW_GUIDELINES.md) | フィードバック対応方法 |
-| **独立作業** | チーム開発 | [TEAM_CUSTOMIZATION_DEV.md](./docs/team/TEAM_CUSTOMIZATION_DEV.md) | 開発ワークフロー |
-| **サポート** | 緊急時対応 | [EMERGENCY_RESPONSE.md](./docs/reference/EMERGENCY_RESPONSE.md) | エスカレーション手順 |
 
 ---
 
