@@ -32,6 +32,7 @@
 - **－** = 対象外（Not applicable）
 
 新規参画者の方が効率的にプロジェクトに参加できるよう、段階的なセットアップフローを整備しています。
+**各ノードをクリックすると詳細ドキュメントに移動できます。**
 
 ```mermaid
 flowchart TD
@@ -39,60 +40,60 @@ flowchart TD
     START([新規参画開始]) --> CHECK{WSL2環境<br/>確認}
     
     %% 環境構築フェーズ（Day 1-2: 約3-4時間）
-    CHECK -->|Windows使用| WSL2[WSL2インストール<br/>⏱️ 30分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
-    CHECK -->|Mac/Linux使用| GIT_SETUP[Git環境セットアップ<br/>⏱️ 15分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
+    CHECK -->|Windows使用| WSL2[WSL2インストール<br/>⏱️ 30分<br/>📖 環境構築ガイド]
+    CHECK -->|Mac/Linux使用| GIT_SETUP[Git環境セットアップ<br/>⏱️ 15分<br/>📖 環境構築ガイド]
     
     WSL2 --> GIT_SETUP
-    GIT_SETUP --> GITHUB_ACCOUNT[GitHubアカウント作成<br/>⏱️ 20分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
-    GITHUB_ACCOUNT --> TWO_FA[2FA設定<br/>⏱️ 10分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
-    TWO_FA --> SSH_KEY[SSH鍵生成・登録<br/>⏱️ 15分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
-    SSH_KEY --> CONNECTION_TEST[接続テスト<br/>⏱️ 5分<br/>📖 GITHUB_ENVIRONMENT_SETUP.md]
+    GIT_SETUP --> GITHUB_ACCOUNT[GitHubアカウント作成<br/>⏱️ 20分<br/>📖 環境構築ガイド]
+    GITHUB_ACCOUNT --> TWO_FA[2FA設定<br/>⏱️ 10分<br/>📖 環境構築ガイド]
+    TWO_FA --> SSH_KEY[SSH鍵生成・登録<br/>⏱️ 15分<br/>📖 環境構築ガイド]
+    SSH_KEY --> CONNECTION_TEST[接続テスト<br/>⏱️ 5分<br/>📖 環境構築ガイド]
     
     CONNECTION_TEST --> ENV_CHECK{環境構築<br/>完了確認}
-    ENV_CHECK -->|NG| TROUBLESHOOT[トラブルシューティング<br/>📞 サポート連絡<br/>📖 TROUBLESHOOTING.md]
+    ENV_CHECK -->|NG| TROUBLESHOOT[トラブルシューティング<br/>📞 サポート連絡<br/>📖 トラブル対応]
     TROUBLESHOOT --> ENV_CHECK
     ENV_CHECK -->|OK| ORG_INVITE
     
     %% 組織参加フェーズ（Day 2: 約1時間）
-    ORG_INVITE[Organization招待<br/>⏱️ 15分<br/>📖 ONBOARDING.md] --> TEAM_ASSIGN[チーム配属確認<br/>⏱️ 15分<br/>📖 ONBOARDING.md]
-    TEAM_ASSIGN --> DOCS_READ[基本ドキュメント確認<br/>⏱️ 30分<br/>📖 MASTER_GITHUB_GUIDELINES.md]
+    ORG_INVITE[Organization招待<br/>⏱️ 15分<br/>📖 オンボーディング] --> TEAM_ASSIGN[チーム配属確認<br/>⏱️ 15分<br/>📖 オンボーディング]
+    TEAM_ASSIGN --> DOCS_READ[基本ドキュメント確認<br/>⏱️ 30分<br/>📖 統合ガイドライン]
     
     %% 学習フェーズ（Day 3-5: 約8-10時間）
     DOCS_READ --> SKILL_CHECK{GitHub経験<br/>レベル確認}
     
-    SKILL_CHECK -->|初心者| BASIC_TRAINING[Git基礎トレーニング<br/>⏱️ 3-4時間<br/>📖 QUICK_REFERENCE.md]
-    SKILL_CHECK -->|経験者| RULE_STUDY[社内ルール学習<br/>⏱️ 1-2時間<br/>📖 MASTER_GITHUB_GUIDELINES.md]
+    SKILL_CHECK -->|初心者| BASIC_TRAINING[Git基礎トレーニング<br/>⏱️ 3-4時間<br/>📖 クイックリファレンス]
+    SKILL_CHECK -->|経験者| RULE_STUDY[社内ルール学習<br/>⏱️ 1-2時間<br/>📖 統合ガイドライン]
     
-    BASIC_TRAINING --> PRACTICE_REPO[練習リポジトリ<br/>実習<br/>⏱️ 2時間<br/>📖 ONBOARDING.md]
-    PRACTICE_REPO --> PR_PRACTICE[PR作成練習<br/>⏱️ 1時間<br/>📖 PR_REVIEW_GUIDELINES.md]
-    PR_PRACTICE --> CONFLICT_PRACTICE[コンフリクト解決<br/>練習<br/>⏱️ 1時間<br/>📖 TROUBLESHOOTING.md]
+    BASIC_TRAINING --> PRACTICE_REPO[練習リポジトリ<br/>実習<br/>⏱️ 2時間<br/>📖 オンボーディング]
+    PRACTICE_REPO --> PR_PRACTICE[PR作成練習<br/>⏱️ 1時間<br/>📖 PRレビューガイド]
+    PR_PRACTICE --> CONFLICT_PRACTICE[コンフリクト解決<br/>練習<br/>⏱️ 1時間<br/>📖 トラブル対応]
     CONFLICT_PRACTICE --> RULE_STUDY
     
     %% ルール理解フェーズ
-    RULE_STUDY --> COMMIT_RULES[コミットメッセージ<br/>規約理解<br/>⏱️ 30分<br/>📖 COMMIT_CONVENTION_GUIDE.md]
-    COMMIT_RULES --> BRANCH_STRATEGY[ブランチ戦略<br/>理解<br/>⏱️ 30分<br/>📖 BRANCH_MANAGEMENT_RULES.md]
-    BRANCH_STRATEGY --> SECURITY_RULES[セキュリティルール<br/>確認<br/>⏱️ 30分<br/>📖 GITHUB_SECURITY_BEST_PRACTICES.md]
+    RULE_STUDY --> COMMIT_RULES[コミットメッセージ<br/>規約理解<br/>⏱️ 30分<br/>📖 コミット規約]
+    COMMIT_RULES --> BRANCH_STRATEGY[ブランチ戦略<br/>理解<br/>⏱️ 30分<br/>📖 ブランチ管理]
+    BRANCH_STRATEGY --> SECURITY_RULES[セキュリティルール<br/>確認<br/>⏱️ 30分<br/>📖 セキュリティ対策]
     
     %% プロジェクト参加フェーズ（Week 2: 約4-6時間）
     SECURITY_RULES --> PROJECT_ASSIGN[プロジェクト<br/>アサイン通知]
     PROJECT_ASSIGN --> REPO_ACCESS[リポジトリ<br/>アクセス権限付与]
-    REPO_ACCESS --> REPO_CLONE[プロジェクト<br/>リポジトリクローン<br/>⏱️ 15分<br/>📖 QUICK_REFERENCE.md]
+    REPO_ACCESS --> REPO_CLONE[プロジェクト<br/>リポジトリクローン<br/>⏱️ 15分<br/>📖 クイックリファレンス]
     REPO_CLONE --> DEV_ENV[開発環境構築<br/>⏱️ 1-2時間<br/>📖 プロジェクト固有README]
     
     DEV_ENV --> ENV_TEST{開発環境<br/>動作確認}
-    ENV_TEST -->|NG| DEV_SUPPORT[開発環境<br/>サポート依頼<br/>📖 TROUBLESHOOTING.md]
+    ENV_TEST -->|NG| DEV_SUPPORT[開発環境<br/>サポート依頼<br/>📖 トラブル対応]
     DEV_SUPPORT --> DEV_ENV
     ENV_TEST -->|OK| MENTOR_ASSIGN
     
     %% メンタリングフェーズ（Week 2-3）
-    MENTOR_ASSIGN[メンター配属<br/>⏱️ 30分] --> FIRST_ISSUE[初回Issue割り当て<br/>⏱️ 1時間<br/>📖 ISSUE_PROJECT_MANAGEMENT_GUIDE.md]
+    MENTOR_ASSIGN[メンター配属<br/>⏱️ 30分] --> FIRST_ISSUE[初回Issue割り当て<br/>⏱️ 1時間<br/>📖 Issue/Project管理]
     FIRST_ISSUE --> TASK_UNDERSTAND[要件理解・<br/>質問<br/>⏱️ 30分]
-    TASK_UNDERSTAND --> FIRST_DEVELOPMENT[初回開発実装<br/>⏱️ 2-4時間<br/>📖 BRANCH_MANAGEMENT_RULES.md]
-    FIRST_DEVELOPMENT --> FIRST_PR[初回PR作成<br/>⏱️ 30分<br/>📖 PR_REVIEW_GUIDELINES.md]
-    FIRST_PR --> CODE_REVIEW[コードレビュー<br/>対応<br/>⏱️ 1-2時間<br/>📖 PR_REVIEW_CHECKLIST.md]
+    TASK_UNDERSTAND --> FIRST_DEVELOPMENT[初回開発実装<br/>⏱️ 2-4時間<br/>📖 ブランチ管理]
+    FIRST_DEVELOPMENT --> FIRST_PR[初回PR作成<br/>⏱️ 30分<br/>📖 PRレビューガイド]
+    FIRST_PR --> CODE_REVIEW[コードレビュー<br/>対応<br/>⏱️ 1-2時間<br/>📖 PRチェックリスト]
     
     CODE_REVIEW --> REVIEW_OK{レビュー<br/>承認}
-    REVIEW_OK -->|修正要求| FIX_CODE[修正対応<br/>⏱️ 1時間<br/>📖 PR_REVIEW_GUIDELINES.md]
+    REVIEW_OK -->|修正要求| FIX_CODE[修正対応<br/>⏱️ 1時間<br/>📖 PRレビューガイド]
     FIX_CODE --> CODE_REVIEW
     REVIEW_OK -->|承認| MERGE_PR[PRマージ<br/>⏱️ 5分]
     
@@ -101,15 +102,44 @@ flowchart TD
     SECOND_TASK --> INDEPENDENT_CHECK{独立作業<br/>可能判定}
     INDEPENDENT_CHECK -->|要継続| MENTOR_CONTINUE[メンタリング継続]
     MENTOR_CONTINUE --> SECOND_TASK
-    INDEPENDENT_CHECK -->|OK| INDEPENDENT_WORK[独立作業移行<br/>📖 TEAM_CUSTOMIZATION_DEV.md]
+    INDEPENDENT_CHECK -->|OK| INDEPENDENT_WORK[独立作業移行<br/>📖 開発チーム向け]
     
     %% 完了フェーズ
     INDEPENDENT_WORK --> ONBOARD_COMPLETE[🎉 オンボーディング<br/>完了]
     ONBOARD_COMPLETE --> REGULAR_DEV[通常開発業務<br/>開始]
     
     %% エラーハンドリング・サポート
-    TROUBLESHOOT --> SUPPORT_CONTACT[📞 SAS Github管理チーム<br/>github@sas-com.com<br/>📖 EMERGENCY_RESPONSE.md]
+    TROUBLESHOOT --> SUPPORT_CONTACT[📞 SAS Github管理チーム<br/>github@sas-com.com<br/>📖 緊急時対応]
     DEV_SUPPORT --> SUPPORT_CONTACT
+    
+    %% リンク定義（各ノードをクリックすると詳細ドキュメントに移動）
+    click WSL2 "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click GIT_SETUP "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click GITHUB_ACCOUNT "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click TWO_FA "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click SSH_KEY "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click CONNECTION_TEST "./docs/onboarding/GITHUB_ENVIRONMENT_SETUP.md" "GitHub環境構築ガイドへ移動"
+    click TROUBLESHOOT "./docs/management/TROUBLESHOOTING.md" "トラブルシューティングガイドへ移動"
+    click ORG_INVITE "./docs/onboarding/ONBOARDING.md" "オンボーディングガイドへ移動"
+    click TEAM_ASSIGN "./docs/onboarding/ONBOARDING.md" "オンボーディングガイドへ移動"
+    click DOCS_READ "./docs/overview/MASTER_GITHUB_GUIDELINES.md" "統合ガイドラインへ移動"
+    click BASIC_TRAINING "./docs/reference/QUICK_REFERENCE.md" "クイックリファレンスへ移動"
+    click RULE_STUDY "./docs/overview/MASTER_GITHUB_GUIDELINES.md" "統合ガイドラインへ移動"
+    click PRACTICE_REPO "./docs/onboarding/ONBOARDING.md" "オンボーディングガイドへ移動"
+    click PR_PRACTICE "./docs/workflow/PR_REVIEW_GUIDELINES.md" "PRレビューガイドラインへ移動"
+    click CONFLICT_PRACTICE "./docs/management/TROUBLESHOOTING.md" "トラブルシューティングガイドへ移動"
+    click COMMIT_RULES "./docs/workflow/COMMIT_CONVENTION_GUIDE.md" "コミット規約ガイドへ移動"
+    click BRANCH_STRATEGY "./docs/workflow/BRANCH_MANAGEMENT_RULES.md" "ブランチ管理ルールへ移動"
+    click SECURITY_RULES "./docs/security/GITHUB_SECURITY_BEST_PRACTICES.md" "セキュリティベストプラクティスへ移動"
+    click REPO_CLONE "./docs/reference/QUICK_REFERENCE.md" "クイックリファレンスへ移動"
+    click DEV_SUPPORT "./docs/management/TROUBLESHOOTING.md" "トラブルシューティングガイドへ移動"
+    click FIRST_ISSUE "./docs/management/ISSUE_PROJECT_MANAGEMENT_GUIDE.md" "Issue/Project管理ガイドへ移動"
+    click FIRST_DEVELOPMENT "./docs/workflow/BRANCH_MANAGEMENT_RULES.md" "ブランチ管理ルールへ移動"
+    click FIRST_PR "./docs/workflow/PR_REVIEW_GUIDELINES.md" "PRレビューガイドラインへ移動"
+    click CODE_REVIEW "./docs/workflow/PR_REVIEW_CHECKLIST.md" "PRレビューチェックリストへ移動"
+    click FIX_CODE "./docs/workflow/PR_REVIEW_GUIDELINES.md" "PRレビューガイドラインへ移動"
+    click INDEPENDENT_WORK "./docs/team/TEAM_CUSTOMIZATION_DEV.md" "開発チーム向けガイドへ移動"
+    click SUPPORT_CONTACT "./docs/reference/EMERGENCY_RESPONSE.md" "緊急時対応マニュアルへ移動"
     
     %% スタイリング
     classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
