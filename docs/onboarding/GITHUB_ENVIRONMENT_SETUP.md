@@ -193,7 +193,7 @@ winver
 ```powershell
 # PowerShell（管理者）で実行
 Get-WindowsOptionalFeature -Online | Where-Object {
-    $_.FeatureName -like "*Linux*" -or 
+    $_.FeatureName -like "*Linux*" -or
     $_.FeatureName -like "*VirtualMachinePlatform*"
 } | Format-Table FeatureName, State -AutoSize
 ```
@@ -204,6 +204,24 @@ Get-WindowsOptionalFeature -Online | Where-Object {
 |--------|------------|------|
 | Microsoft-Windows-Subsystem-Linux | Enabled | Linux基盤機能 |
 | VirtualMachinePlatform | Enabled | 仮想化プラットフォーム |
+
+**もし上記の機能が「Disabled」の場合：**
+
+以下のコマンドを実行して有効化してください：
+
+```powershell
+# PowerShell（管理者）で実行
+# Microsoft-Windows-Subsystem-Linux を有効化
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -All -NoRestart
+
+# VirtualMachinePlatform を有効化
+Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -All -NoRestart
+
+# 両方の機能を有効化したら、必ずPCを再起動
+Restart-Computer
+```
+
+> ⚠️ **重要**: これらの機能が無効の場合、この手順で有効化してから次のセクション「1.2 Windows機能の有効化」に進んでください。すでに両方が「Enabled」になっている場合は、1.2のセクションはスキップして「1.3 WSL2のインストール」に進むことができます。
 
 ---
 
