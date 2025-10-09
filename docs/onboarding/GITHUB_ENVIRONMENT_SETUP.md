@@ -1228,7 +1228,10 @@ cat ~/.ssh/id_ed25519.pub
 
 1. Settings → SSH and GPG keys → New SSH key
 2. 以下を入力：
-   - **Title**: 会社PC-WSL2（識別名）
+   - **Title**: SAS-PC-R-XXX-WSL2（PC識別ID-WSL2(固定文字)）
+     - 例: `SAS-PC-R-001-WSL2`（PC識別IDがR-001の場合）
+     - 例: `SAS-PC-R-123-WSL2`（PC識別IDがR-123の場合）
+     - **注意**: XXXの部分は実際のPC識別IDに置き換えてください
    - **Key type**: Authentication Key
    - **Key**: コピーした公開鍵
 3. Add SSH key をクリック
