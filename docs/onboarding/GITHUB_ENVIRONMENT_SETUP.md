@@ -774,6 +774,32 @@ sudo dnf install -y code
 **Windows/Mac:**
 - スタートメニュー（Windows）または Launchpad（Mac）から VS Code を起動
 
+> ⚠️ **Windows環境での重要な注意事項**
+> VS Codeをインストール後、WSL2から `code` コマンドを実行する前に、**WSL2の再起動が必要**です。
+>
+> **理由:**
+> - VS Codeインストール時にWindows側のPATH環境変数が更新される
+> - WSL2は起動時のPATH設定をキャッシュしているため、古い設定を参照してしまう
+> - 再起動により、最新のPATH設定が反映される
+>
+> **WSL2の再起動手順:**
+> ```powershell
+> # PowerShellで実行
+> # 1. WSL2を完全にシャットダウン
+> wsl --shutdown
+>
+> # 2. WSL2を再起動
+> wsl
+> ```
+>
+> **エラー例（再起動が必要な場合）:**
+> ```bash
+> $ code --version
+> Command 'code' not found
+> ```
+>
+> 上記のエラーが発生した場合は、PowerShellでWSL2を再起動してから、再度確認してください。
+
 **コマンドラインからの確認:**
 
 ```bash
