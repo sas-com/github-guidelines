@@ -1,8 +1,8 @@
 # GitHub 環境構築ガイド
 
-**エス・エー・エス株式会社**  
-*開発環境のセットアップから GitHubアカウント設定まで完全ガイド*  
-*最終更新: 2025年9月12日*
+**エス・エー・エス株式会社**
+*開発環境のセットアップから GitHubアカウント設定まで完全ガイド*
+*最終更新: 2025年10月10日*
 
 ---
 
@@ -25,28 +25,35 @@
    - Windows Terminal活用（強く推奨）
    - トラブルシューティング
 
-4. **[🔧 第2章: Git環境の構築](#-第2章-git環境の構築)**
+4. **[💻 第2章: VS Code + WSL拡張機能のセットアップ](#-第2章-vs-code--wsl拡張機能のセットアップ)**
+   - VS Codeのインストール
+   - Remote - WSL拡張機能
+   - WSLからVS Codeを起動
+   - 推奨拡張機能
+   - トラブルシューティング
+
+5. **[🔧 第3章: Git環境の構築](#-第3章-git環境の構築)**
    - Gitのインストール
    - 初期設定
    - 動作確認
 
-5. **[🌐 第3章: GitHubアカウントの設定](#-第3章-githubアカウントの設定)**
+6. **[🌐 第4章: GitHubアカウントの設定](#-第4章-githubアカウントの設定)**
    - アカウント作成
    - プロフィール設定
    - セキュリティ設定（2FA必須）
 
-6. **[🔑 第4章: SSH接続の設定](#-第4章-ssh接続の設定)**
+7. **[🔑 第5章: SSH接続の設定](#-第5章-ssh接続の設定)**
    - SSH鍵の生成
    - GitHubへの登録
    - 接続テスト
 
-7. **[🏢 第5章: 組織への参加と最終設定](#-第5章-組織への参加と最終設定)**
+8. **[🏢 第6章: 組織への参加と最終設定](#-第6章-組織への参加と最終設定)**
    - 組織への参加
    - 通知設定
    - 最終確認
 
-8. **[❓ 付録: トラブルシューティング](#-付録-トラブルシューティング)**
-9. **[📞 サポート情報](#-サポート情報)**
+9. **[❓ 付録: トラブルシューティング](#-付録-トラブルシューティング)**
+10. **[📞 サポート情報](#-サポート情報)**
 
 ---
 
@@ -66,8 +73,9 @@
 
 | カテゴリ | 所要時間 | 難易度 |
 |---------|----------|--------|
-| **全体所要時間** | **1-2時間** | **★★☆** |
+| **全体所要時間** | **1.5-2.5時間** | **★★☆** |
 | WSL2のインストール（Windows） | 15-30分 | ★★☆ |
+| VS Code + WSL拡張機能 | 15-20分 | ★☆☆ |
 | Gitのセットアップ | 10-15分 | ★☆☆ |
 | GitHubアカウント設定 | 20-30分 | ★☆☆ |
 | SSH接続設定 | 10-15分 | ★★☆ |
@@ -83,14 +91,15 @@
 graph TB
     Start([開始]) --> OS{OSの確認}
     OS -->|Windows| WSL[WSL2インストール]
-    OS -->|Mac/Linux| Git[Gitインストール]
-    WSL --> Git
+    OS -->|Mac/Linux| VSCode[VS Codeインストール]
+    WSL --> VSCode
+    VSCode --> Git[Gitインストール]
     Git --> GitHub[GitHubアカウント作成]
     GitHub --> TwoFA[2FA設定<br/>※必須]
     TwoFA --> SSH[SSH鍵設定]
     SSH --> Org[組織参加]
     Org --> Complete([完了])
-    
+
     style Start fill:#90EE90,color:#000
     style Complete fill:#90EE90,color:#000
     style TwoFA fill:#FFB6C1,color:#000
@@ -101,11 +110,12 @@ graph TB
 | 順序 | 作業項目 | 前提条件 | 必須/任意 |
 |------|----------|----------|-----------|
 | 1 | WSL2インストール | Windows環境 | Windows必須 |
-| 2 | Gitインストール | WSL2完了（Windows）<br/>なし（Mac/Linux） | 必須 |
-| 3 | GitHubアカウント作成 | なし | 必須 |
-| 4 | 2FA設定 | GitHubアカウント | **必須** |
-| 5 | SSH鍵設定 | Git設定完了 | 必須 |
-| 6 | 組織参加 | 2FA設定完了 | 必須 |
+| 2 | VS Code + WSL拡張機能 | WSL2完了（Windows）<br/>なし（Mac/Linux） | 必須 |
+| 3 | Gitインストール | WSL2完了（Windows）<br/>なし（Mac/Linux） | 必須 |
+| 4 | GitHubアカウント作成 | なし | 必須 |
+| 5 | 2FA設定 | GitHubアカウント | **必須** |
+| 6 | SSH鍵設定 | Git設定完了 | 必須 |
+| 7 | 組織参加 | 2FA設定完了 | 必須 |
 
 ### ✅ マスターチェックリスト
 
@@ -116,6 +126,9 @@ graph TB
 
 #### 🔧 セットアップフェーズ
 - [ ] WSL2インストール完了（Windowsのみ）
+- [ ] VS Codeインストール完了
+- [ ] Remote - WSL拡張機能インストール完了
+- [ ] WSLからVS Code起動確認完了
 - [ ] Gitインストール完了
 - [ ] Git初期設定完了（user.name, user.email）
 
@@ -633,12 +646,679 @@ tail -f /var/log/application.log
 - 統一された作業環境
 - トラブルシューティング効率の向上
 
-> 📝 **次のステップ**  
-> Windows Terminal の設定が完了したら、[第2章: Git環境の構築](#-第2章-git環境の構築) に進んでください。
+> 📝 **次のステップ**
+> Windows Terminal の設定が完了したら、[第2章: VS Code + WSL拡張機能のセットアップ](#-第2章-vs-code--wsl拡張機能のセットアップ) に進んでください。
 
 ---
 
-## 🔧 第2章: Git環境の構築
+## 💻 第2章: VS Code + WSL拡張機能のセットアップ
+
+### 📊 章の概要
+
+| 項目 | 内容 |
+|------|------|
+| **目的** | 統合開発環境VS Codeのセットアップ |
+| **所要時間** | 15-20分 |
+| **難易度** | ★☆☆ |
+| **前提条件** | WSL2完了（Windows）またはターミナルアクセス（Mac/Linux） |
+
+> 💡 **VS Code について**
+> Visual Studio Code（VS Code）は、Microsoftが開発した無料のソースコードエディタです。Git統合、WSL2サポート、豊富な拡張機能により、現代的な開発環境を提供します。
+
+---
+
+### 2.1 VS Codeのインストール
+
+#### 📋 インストール方法の選択
+
+VS Codeのインストール方法は、お使いのOSによって異なります。
+
+---
+
+#### 🖥️ Windows環境でのインストール
+
+> ⚠️ **重要な注意事項**
+> Windowsユーザーの場合、**Windows側**にVS Codeをインストールします。WSL2内にはインストールしません。
+
+**方法A: 公式サイトからダウンロード（推奨）**
+
+1. **公式サイトにアクセス**
+   ```
+   https://code.visualstudio.com/
+   ```
+
+2. **Download for Windows をクリック**
+   - 自動的に `.exe` ファイルがダウンロード開始
+   - ファイル名例: `VSCodeUserSetup-x64-1.85.0.exe`
+
+3. **インストーラーを実行**
+   - ダウンロードした `.exe` ファイルをダブルクリック
+   - **重要な設定項目：**
+
+   | 設定項目 | 推奨設定 | 説明 |
+   |---------|---------|------|
+   | **Add "Open with Code"** | ☑ チェック | 右クリックメニューに追加 |
+   | **Add to PATH** | ☑ チェック | コマンドラインから起動可能 |
+   | **Register Code as editor for supported file types** | ☑ チェック | ファイルの既定エディタ |
+
+4. **インストール完了**
+   - "Finish" をクリック
+   - VS Codeが自動的に起動
+
+**方法B: Winget（パッケージマネージャ）**
+
+```powershell
+# PowerShellで実行
+winget install -e --id Microsoft.VisualStudioCode
+```
+
+---
+
+#### 🍎 Mac環境でのインストール
+
+**方法A: 公式サイトからダウンロード**
+
+1. **公式サイトにアクセス**
+   ```
+   https://code.visualstudio.com/
+   ```
+
+2. **Download for macOS をクリック**
+   - `.zip` ファイルがダウンロード
+
+3. **インストール**
+   - ダウンロードした `.zip` を解凍
+   - `Visual Studio Code.app` を `アプリケーション` フォルダにドラッグ
+
+**方法B: Homebrew**
+
+```bash
+# Homebrewを使用
+brew install --cask visual-studio-code
+```
+
+---
+
+#### 🐧 Linux環境でのインストール
+
+**Ubuntu/Debian:**
+
+```bash
+# 公式パッケージリポジトリを追加
+sudo apt update
+sudo apt install -y wget gpg
+wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+
+# VS Codeをインストール
+sudo apt update
+sudo apt install -y code
+```
+
+**RHEL/Fedora/CentOS:**
+
+```bash
+# リポジトリを追加
+sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+
+# インストール
+sudo dnf install -y code
+```
+
+---
+
+#### ✅ インストール確認
+
+**Windows/Mac:**
+- スタートメニュー（Windows）または Launchpad（Mac）から VS Code を起動
+
+**コマンドラインからの確認:**
+
+```bash
+# バージョン確認
+code --version
+
+# 出力例:
+# 1.85.0
+# 1a5daa3a0231a0fbba4f14db7ec463cf99d7768e
+# x64
+```
+
+---
+
+### 2.2 Remote - WSL拡張機能のインストール
+
+> 💡 **Remote - WSL拡張機能について**
+> この拡張機能により、Windows上のVS CodeからWSL2内のファイルを直接編集できます。WSL2の高速なファイルシステムを活用しながら、Windows上の快適なGUIで作業できます。
+
+---
+
+#### 📥 拡張機能のインストール手順
+
+**方法A: 拡張機能マーケットプレイスから（推奨）**
+
+1. **VS Codeを起動**
+
+2. **拡張機能ビューを開く**
+   - **ショートカット**: `Ctrl + Shift + X`（Windows/Linux）または `Cmd + Shift + X`（Mac）
+   - **または**: 左サイドバーの拡張機能アイコン（四角が4つ並んだアイコン）をクリック
+
+3. **"Remote - WSL" を検索**
+   - 検索ボックスに `Remote - WSL` と入力
+   - **公式拡張機能**: 発行元が `Microsoft` であることを確認
+
+4. **インストールをクリック**
+   - 青い "Install" ボタンをクリック
+   - インストール完了まで数秒待機
+
+5. **インストール確認**
+   - 拡張機能の状態が "Installed" になっていることを確認
+   - VS Code左下に緑色のリモート接続アイコンが表示される
+
+**方法B: コマンドラインから**
+
+```bash
+# コマンドでインストール
+code --install-extension ms-vscode-remote.remote-wsl
+```
+
+---
+
+#### 🎯 Remote - WSLの主な機能
+
+| 機能 | 説明 | メリット |
+|------|------|---------|
+| **WSL2ファイルアクセス** | WSL2内のファイルを直接編集 | 高速なファイルアクセス |
+| **統合ターミナル** | WSL2のbashシェルを使用 | Linux環境で直接コマンド実行 |
+| **拡張機能の分離** | WSL専用拡張機能を管理 | 環境ごとの最適化 |
+| **Git統合** | WSL2内のGitを使用 | 改行コード問題の回避 |
+
+---
+
+### 2.3 WSLからVS Codeを起動する方法
+
+#### 🚀 基本的な起動方法
+
+**方法1: コマンドラインから起動（最も一般的）**
+
+```bash
+# WSL2ターミナル（Ubuntu）で実行
+
+# カレントディレクトリをVS Codeで開く
+code .
+
+# 特定のディレクトリを開く
+code ~/projects/my-repo
+
+# 特定のファイルを開く
+code README.md
+
+# 新しいウィンドウで開く
+code -n .
+
+# 既存のウィンドウに追加
+code -a .
+```
+
+**初回起動時:**
+- "Installing VS Code Server..." というメッセージが表示
+- VS Code Serverが自動的にWSL2内にインストールされる
+- 完了まで30秒～1分程度待機
+
+---
+
+#### 📁 実践的な使用例
+
+**シナリオ1: 新しいプロジェクトを開始**
+
+```bash
+# プロジェクトディレクトリを作成
+mkdir -p ~/projects/my-new-project
+cd ~/projects/my-new-project
+
+# VS Codeで開く
+code .
+```
+
+**シナリオ2: 既存のGitリポジトリを操作**
+
+```bash
+# リポジトリをクローン
+cd ~/projects
+git clone git@github.com:sas-com/example-repo.git
+
+# VS Codeで開く
+cd example-repo
+code .
+```
+
+**シナリオ3: 複数のプロジェクトを同時に開く**
+
+```bash
+# プロジェクトA
+cd ~/projects/project-a
+code .
+
+# プロジェクトB（新しいウィンドウで開く）
+cd ~/projects/project-b
+code -n .
+```
+
+---
+
+#### 🎨 VS Code上での確認ポイント
+
+VS Codeが正しくWSL2に接続されているかを確認：
+
+1. **左下のリモート接続インジケーター**
+   - 緑色のアイコンに `WSL: Ubuntu` と表示
+   - クリックすると接続オプションが表示
+
+2. **統合ターミナルの確認**
+   - `Ctrl + ` ` （バッククォート）でターミナルを開く
+   - プロンプトが `yourname@HOSTNAME:~$` のようにWSL2のbash形式
+
+3. **ファイルパスの確認**
+   - エクスプローラーのパスが `/home/yourname/...` 形式
+   - Windows側（`/mnt/c/...`）ではないことを確認
+
+---
+
+### 2.4 推奨拡張機能（Git関連）
+
+#### 🔌 必須拡張機能
+
+開発効率を大幅に向上させる拡張機能をインストールします。
+
+---
+
+#### 📦 Git関連拡張機能
+
+**1. GitLens — Git supercharged**
+
+| 項目 | 内容 |
+|------|------|
+| **ID** | `eamodio.gitlens` |
+| **目的** | Git機能の強化 |
+| **主な機能** | コミット履歴表示、ブレーム注釈、コミット比較 |
+| **推奨度** | ⭐⭐⭐ 必須 |
+
+**インストール:**
+```bash
+code --install-extension eamodio.gitlens
+```
+
+**主な機能：**
+- **Blame annotations**: 各行の最終変更者とコミット情報を表示
+- **File history**: ファイルの変更履歴を視覚的に表示
+- **Commit search**: コミットメッセージや変更内容を検索
+- **Repository insights**: リポジトリの統計情報
+
+---
+
+**2. Git Graph**
+
+| 項目 | 内容 |
+|------|------|
+| **ID** | `mhutchie.git-graph` |
+| **目的** | ブランチとコミット履歴の可視化 |
+| **主な機能** | グラフィカルなGitツリー表示 |
+| **推奨度** | ⭐⭐⭐ 必須 |
+
+**インストール:**
+```bash
+code --install-extension mhutchie.git-graph
+```
+
+**主な機能：**
+- ブランチ構造の視覚的表示
+- コミット間の関係性を理解
+- マージやリベースの影響を確認
+
+---
+
+**3. Git History**
+
+| 項目 | 内容 |
+|------|------|
+| **ID** | `donjayamanne.githistory` |
+| **目的** | ファイル/行の履歴表示 |
+| **主な機能** | コミット詳細、ファイル比較 |
+| **推奨度** | ⭐⭐ 推奨 |
+
+**インストール:**
+```bash
+code --install-extension donjayamanne.githistory
+```
+
+---
+
+#### 🛠️ 開発支援拡張機能
+
+**4. EditorConfig for VS Code**
+
+```bash
+code --install-extension editorconfig.editorconfig
+```
+
+- **目的**: チーム全体でコーディングスタイルを統一
+- **機能**: `.editorconfig` ファイルに基づいてインデント、改行コードを自動設定
+
+---
+
+**5. Markdown All in One**
+
+```bash
+code --install-extension yzhang.markdown-all-in-one
+```
+
+- **目的**: README.md等のMarkdownファイル編集支援
+- **機能**: プレビュー、目次生成、ショートカット
+
+---
+
+**6. Better Comments**
+
+```bash
+code --install-extension aaron-bond.better-comments
+```
+
+- **目的**: コメントの視覚的強調
+- **機能**: TODO、FIXME、NOTE等をカラー表示
+
+---
+
+#### 📦 一括インストール
+
+以下のコマンドで推奨拡張機能をまとめてインストール：
+
+```bash
+# WSL2ターミナルで実行
+code --install-extension eamodio.gitlens
+code --install-extension mhutchie.git-graph
+code --install-extension donjayamanne.githistory
+code --install-extension editorconfig.editorconfig
+code --install-extension yzhang.markdown-all-in-one
+code --install-extension aaron-bond.better-comments
+```
+
+---
+
+#### ✅ インストール確認
+
+```bash
+# インストール済み拡張機能の一覧表示
+code --list-extensions
+
+# 出力例:
+# aaron-bond.better-comments
+# donjayamanne.githistory
+# eamodio.gitlens
+# editorconfig.editorconfig
+# mhutchie.git-graph
+# yzhang.markdown-all-in-one
+```
+
+---
+
+### 2.5 VS Codeの推奨設定
+
+#### ⚙️ WSL2環境向け設定
+
+VS Codeの設定ファイル（`settings.json`）に以下を追加：
+
+**設定ファイルの開き方：**
+- `Ctrl + ,` で設定画面を開く
+- 右上の `{}` アイコンをクリックして `settings.json` を直接編集
+
+**推奨設定（参考例）:**
+
+```json
+{
+  // ========== Git設定 ==========
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.suggestSmartCommit": false,
+
+  // ========== GitLens設定 ==========
+  "gitlens.currentLine.enabled": true,
+  "gitlens.hovers.currentLine.over": "line",
+  "gitlens.codeLens.enabled": true,
+
+  // ========== ファイル設定 ==========
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  // ========== エディタ設定 ==========
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.renderWhitespace": "boundary",
+  "editor.rulers": [80, 120],
+
+  // ========== ターミナル設定 ==========
+  "terminal.integrated.defaultProfile.windows": "Ubuntu (WSL)",
+  "terminal.integrated.fontSize": 14,
+
+  // ========== Remote - WSL設定 ==========
+  "remote.WSL.fileWatcher.polling": false
+}
+```
+
+> ⚠️ **注意**: これらは参考設定です。プロジェクトやチームの規約に合わせて調整してください。
+
+---
+
+### 2.6 トラブルシューティング
+
+#### ❌ よくある問題と解決方法
+
+---
+
+#### 問題1: `code` コマンドが認識されない
+
+**症状:**
+```bash
+$ code .
+bash: code: command not found
+```
+
+**原因と解決方法:**
+
+| 原因 | 解決方法 |
+|------|---------|
+| **VS CodeがPATHに追加されていない** | VS Codeを再インストール（"Add to PATH"にチェック） |
+| **WSL2のPATH未更新** | WSL2ターミナルを再起動 |
+
+**手動でPATHに追加（Windows）:**
+
+```bash
+# WSL2の ~/.bashrc または ~/.zshrc に追加
+echo 'export PATH=$PATH:"/mnt/c/Program Files/Microsoft VS Code/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+---
+
+#### 問題2: VS Code Serverのインストールが失敗する
+
+**症状:**
+```
+Installing VS Code Server...
+Error: Failed to download
+```
+
+**解決方法:**
+
+1. **インターネット接続を確認**
+2. **プロキシ設定を確認**（企業環境の場合）
+3. **手動でサーバーをダウンロード:**
+
+```bash
+# WSL2で実行
+curl -L https://update.code.visualstudio.com/latest/server-linux-x64/stable -o vscode-server.tar.gz
+mkdir -p ~/.vscode-server/bin/latest
+tar -xzf vscode-server.tar.gz -C ~/.vscode-server/bin/latest --strip-components=1
+```
+
+---
+
+#### 問題3: WSL2への接続が切断される
+
+**症状:**
+- 作業中にVS CodeがWSL2から切断される
+- "Disconnected from WSL" エラー
+
+**解決方法:**
+
+**方法A: WSL2を再起動**
+```bash
+# PowerShellで実行
+wsl --shutdown
+wsl
+```
+
+**方法B: VS Code Serverを再インストール**
+```bash
+# WSL2内の既存サーバーを削除
+rm -rf ~/.vscode-server
+
+# VS Codeから再接続
+code .
+```
+
+---
+
+#### 問題4: ファイル監視エラー（File Watcher Error）
+
+**症状:**
+```
+Visual Studio Code is unable to watch for file changes in this large workspace
+```
+
+**原因:**
+- ファイル監視数の上限超過
+
+**解決方法:**
+
+```bash
+# WSL2で実行
+# ファイル監視数の上限を増やす
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+---
+
+#### 問題5: 拡張機能がWSL2で動作しない
+
+**症状:**
+- Windows側で動作するが、WSL2で動作しない拡張機能がある
+
+**解決方法:**
+
+1. **拡張機能をWSL2側にインストール**
+   - 拡張機能ビューで "Install in WSL: Ubuntu" をクリック
+
+2. **拡張機能の詳細を確認**
+   - 一部の拡張機能はWSL2非対応
+
+---
+
+#### 問題6: Gitの改行コード警告が表示される
+
+**症状:**
+```
+warning: LF will be replaced by CRLF
+```
+
+**解決方法:**
+
+```bash
+# WSL2で実行
+git config --global core.autocrlf input
+git config --global core.eol lf
+```
+
+VS Code設定に追加:
+```json
+{
+  "files.eol": "\n"
+}
+```
+
+---
+
+#### 🔍 デバッグ情報の収集
+
+問題が解決しない場合、以下の情報を確認：
+
+```bash
+# VS Codeのバージョン
+code --version
+
+# WSL2のバージョン
+wsl --version
+
+# VS Code Serverのログ
+~/.vscode-server/.logs/
+
+# Remote - WSL拡張機能のログ
+# VS Code: Ctrl + Shift + P → "Remote-WSL: Show Log"
+```
+
+---
+
+### 2.7 VS Code活用のベストプラクティス
+
+#### 💡 効率的なワークフロー
+
+**1. ワークスペースの活用**
+
+```bash
+# プロジェクトごとにワークスペースを作成
+code ~/projects/project-a/project-a.code-workspace
+```
+
+**2. マルチルートワークスペース**
+- 複数のプロジェクトを1つのウィンドウで管理
+- File → Add Folder to Workspace
+
+**3. ショートカットキー**
+
+| 操作 | Windows/Linux | Mac |
+|------|---------------|-----|
+| **コマンドパレット** | `Ctrl + Shift + P` | `Cmd + Shift + P` |
+| **ファイル検索** | `Ctrl + P` | `Cmd + P` |
+| **統合ターミナル** | `` Ctrl + ` `` | `` Cmd + ` `` |
+| **Git操作** | `Ctrl + Shift + G` | `Cmd + Shift + G` |
+| **ソース管理** | `Ctrl + Shift + G G` | `Cmd + Shift + G G` |
+
+---
+
+#### ✅ VS Codeセットアップ完了チェックリスト
+
+- [ ] VS Codeがインストール済み
+- [ ] `code --version` でバージョン確認成功
+- [ ] Remote - WSL拡張機能がインストール済み
+- [ ] WSL2から `code .` で起動成功
+- [ ] VS Code左下に `WSL: Ubuntu` と表示
+- [ ] GitLens拡張機能がインストール済み
+- [ ] Git Graph拡張機能がインストール済み
+- [ ] 推奨設定を適用済み
+- [ ] 統合ターミナルでWSL2のbashが起動
+
+---
+
+> 📝 **次のステップ**
+> VS Codeのセットアップが完了したら、[第3章: Git環境の構築](#-第3章-git環境の構築) に進んでください。
+
+---
+
+## 🔧 第3章: Git環境の構築
 
 ### 📊 章の概要
 
@@ -651,7 +1331,7 @@ tail -f /var/log/application.log
 
 ---
 
-### 2.1 Gitのインストール
+### 3.1 Gitのインストール
 
 #### 🖥️ Windows（WSL2内で実行）
 
@@ -687,7 +1367,7 @@ sudo yum install -y git
 
 ---
 
-### 2.2 Git初期設定
+### 3.2 Git初期設定
 
 **必須設定の実行：**
 
@@ -701,7 +1381,7 @@ git config --global user.name "taro-yamada"
 git config --global user.email "yamada@sas-com.com"
 
 # ========== エディタ設定 ==========
-# VS Code を使用する場合
+# VS Code を使用する場合（第2章でVS Codeをインストール済みの場合）
 git config --global core.editor "code --wait"
 
 # ========== 日本語対応 ==========
@@ -763,7 +1443,7 @@ git config --global --list
 
 ---
 
-### 2.3 エイリアス設定（任意）
+### 3.3 エイリアス設定（任意）
 
 ```bash
 # よく使うコマンドの短縮形
@@ -776,7 +1456,7 @@ git config --global alias.lg "log --graph --oneline --all"
 
 ---
 
-## 🌐 第3章: GitHubアカウントの設定
+## 🌐 第4章: GitHubアカウントの設定
 
 ### 📊 章の概要
 
@@ -789,7 +1469,7 @@ git config --global alias.lg "log --graph --oneline --all"
 
 ---
 
-### 3.1 アカウント作成
+### 4.1 アカウント作成
 
 #### 新規作成の手順
 
@@ -851,7 +1531,7 @@ git config --global alias.lg "log --graph --oneline --all"
 
 ---
 
-### 3.2 プロフィール設定
+### 4.2 プロフィール設定
 
 **Settings → Profile で設定：**
 
@@ -865,7 +1545,7 @@ git config --global alias.lg "log --graph --oneline --all"
 
 ---
 
-### 3.3 セキュリティ設定（最重要）
+### 4.3 セキュリティ設定（最重要）
 
 #### 🔐 2要素認証（2FA）の設定 ※必須
 
@@ -1198,7 +1878,7 @@ GitHubを日本語表示にしている場合の対応表：
 
 ---
 
-## 🔑 第4章: SSH接続の設定
+## 🔑 第5章: SSH接続の設定
 
 ### 📊 章の概要
 
@@ -1211,7 +1891,7 @@ GitHubを日本語表示にしている場合の対応表：
 
 ---
 
-### 4.1 SSH鍵の生成
+### 5.1 SSH鍵の生成
 
 **WSL2/Mac/Linuxで実行：**
 
@@ -1231,7 +1911,7 @@ ls -la ~/.ssh/
 
 ---
 
-### 4.2 GitHubへの登録
+### 5.2 GitHubへの登録
 
 ```bash
 # 公開鍵をコピー（WSL2の場合）
@@ -1256,7 +1936,7 @@ cat ~/.ssh/id_ed25519.pub
 
 ---
 
-### 4.3 接続テスト
+### 5.3 接続テスト
 
 ```bash
 # SSH接続テスト
@@ -1271,7 +1951,7 @@ ssh -T git@github.com
 
 ---
 
-## 🏢 第5章: 組織への参加と最終設定
+## 🏢 第6章: 組織への参加と最終設定
 
 ### 📊 章の概要
 
@@ -1284,7 +1964,7 @@ ssh -T git@github.com
 
 ---
 
-### 5.1 組織への参加
+### 6.1 組織への参加
 
 1. **招待メールを確認**
    - 件名: `You've been invited to join sas-com`
@@ -1295,7 +1975,7 @@ ssh -T git@github.com
 
 ---
 
-### 5.2 通知設定
+### 6.2 通知設定
 
 **Settings → Notifications で設定：**
 
@@ -1307,12 +1987,15 @@ ssh -T git@github.com
 
 ---
 
-### 5.3 最終確認
+### 6.3 最終確認
 
 #### ✅ 環境構築完了チェックリスト
 
 **システム環境：**
 - [ ] WSL2が正常動作（Windows）
+- [ ] VS Codeがインストール済み
+- [ ] Remote - WSL拡張機能が動作
+- [ ] WSLから `code .` で起動可能
 - [ ] Gitがインストール済み
 - [ ] Git設定が完了
 
