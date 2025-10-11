@@ -651,452 +651,120 @@ tail -f /var/log/application.log
 
 ---
 
-## 💻 第2章: VS Code + WSL拡張機能のセットアップ
+## 💻 第2章: 開発エディタの基本セットアップ
 
 ### 📊 章の概要
 
 | 項目 | 内容 |
 |------|------|
-| **目的** | 統合開発環境VS Codeのセットアップ |
-| **所要時間** | 15-20分 |
+| **目的** | 開発用エディタの基本インストール |
+| **所要時間** | 5-10分 |
 | **難易度** | ★☆☆ |
 | **前提条件** | WSL2完了（Windows）またはターミナルアクセス（Mac/Linux） |
 
-> 💡 **VS Code について**
-> Visual Studio Code（VS Code）は、Microsoftが開発した無料のソースコードエディタです。Git統合、WSL2サポート、豊富な拡張機能により、現代的な開発環境を提供します。
+> 💡 **開発エディタについて**
+> 本章では、Git環境構築に必要な最小限のエディタセットアップのみ説明します。IDE固有の詳細な設定については、後述の「IDE統合設定ガイド」を参照してください。
 
 ---
 
-### 2.1 VS Codeのインストール
+### 2.1 VS Codeのインストール（推奨）
 
-#### 📋 インストール方法の選択
+#### 📋 基本インストール手順
 
-VS Codeのインストール方法は、お使いのOSによって異なります。
+**Windows環境：**
+1. 公式サイト（https://code.visualstudio.com/）からダウンロード
+2. インストーラーを実行（**必ず「Add to PATH」にチェック**）
+3. インストール完了
 
----
-
-#### 🖥️ Windows環境でのインストール
-
-> ⚠️ **重要な注意事項**
-> Windowsユーザーの場合、**Windows側**にVS Codeをインストールします。WSL2内にはインストールしません。
-
-**方法A: 公式サイトからダウンロード（推奨）**
-
-1. **公式サイトにアクセス**
-   ```
-   https://code.visualstudio.com/
-   ```
-
-2. **Download for Windows をクリック**
-   - 自動的に `.exe` ファイルがダウンロード開始
-   - ファイル名例: `VSCodeUserSetup-x64-1.85.0.exe`
-
-3. **インストーラーを実行**
-   - ダウンロードした `.exe` ファイルをダブルクリック
-   - **重要な設定項目：**
-
-   | 設定項目 | 推奨設定 | 説明 |
-   |---------|---------|------|
-   | **Add "Open with Code"** | ☑ チェック | 右クリックメニューに追加 |
-   | **Add to PATH** | ☑ チェック | コマンドラインから起動可能 |
-   | **Register Code as editor for supported file types** | ☑ チェック | ファイルの既定エディタ |
-
-4. **インストール完了**
-   - "Finish" をクリック
-   - VS Codeが自動的に起動
-
-**方法B: Winget（パッケージマネージャ）**
-
-```powershell
-# PowerShellで実行
-winget install -e --id Microsoft.VisualStudioCode
-```
-
----
-
-#### 🍎 Mac環境でのインストール
-
-**方法A: 公式サイトからダウンロード**
-
-1. **公式サイトにアクセス**
-   ```
-   https://code.visualstudio.com/
-   ```
-
-2. **Download for macOS をクリック**
-   - `.zip` ファイルがダウンロード
-
-3. **インストール**
-   - ダウンロードした `.zip` を解凍
-   - `Visual Studio Code.app` を `アプリケーション` フォルダにドラッグ
-
-**方法B: Homebrew**
-
+**Mac環境：**
 ```bash
-# Homebrewを使用
+# Homebrewを使用（推奨）
 brew install --cask visual-studio-code
 ```
 
----
-
-#### 🐧 Linux環境でのインストール
-
-**Ubuntu/Debian:**
-
+**Linux環境：**
 ```bash
-# 公式パッケージリポジトリを追加
-sudo apt update
-sudo apt install -y wget gpg
-wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y code
 
-# VS Codeをインストール
-sudo apt update
-sudo apt install -y code
+# または公式サイトからダウンロード
 ```
-
-**RHEL/Fedora/CentOS:**
-
-```bash
-# リポジトリを追加
-sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-
-# インストール
-sudo dnf install -y code
-```
-
----
 
 #### ✅ インストール確認
 
-**Windows/Mac:**
-- スタートメニュー（Windows）または Launchpad（Mac）から VS Code を起動
-
-> ⚠️ **Windows環境での重要な注意事項**
-> VS Codeをインストール後、WSL2から `code` コマンドを実行する前に、**WSL2の再起動が必要**です。
->
-> **理由:**
-> - VS Codeインストール時にWindows側のPATH環境変数が更新される
-> - WSL2は起動時のPATH設定をキャッシュしているため、古い設定を参照してしまう
-> - 再起動により、最新のPATH設定が反映される
->
-> **WSL2の再起動手順:**
-> ```powershell
-> # PowerShellで実行
-> # 1. WSL2を完全にシャットダウン
-> wsl --shutdown
->
-> # 2. WSL2を再起動
-> wsl
-> ```
->
-> **エラー例（再起動が必要な場合）:**
-> ```bash
-> $ code --version
-> Command 'code' not found
-> ```
->
-> 上記のエラーが発生した場合は、PowerShellでWSL2を再起動してから、再度確認してください。
-
-**コマンドラインからの確認:**
-
 ```bash
-# バージョン確認
+# コマンドラインで確認
 code --version
-
-# 出力例:
-# 1.85.0
-# 1a5daa3a0231a0fbba4f14db7ec463cf99d7768e
-# x64
 ```
 
----
+### 2.2 WSL2連携設定（Windows環境）
 
-### 2.2 Remote - WSL拡張機能のインストール
+#### 📥 Remote - WSL拡張機能のインストール
 
-> 💡 **Remote - WSL拡張機能について**
-> この拡張機能により、Windows上のVS CodeからWSL2内のファイルを直接編集できます。WSL2の高速なファイルシステムを活用しながら、Windows上の快適なGUIで作業できます。
-
----
-
-#### 📥 拡張機能のインストール手順
-
-**方法A: 拡張機能マーケットプレイスから（推奨）**
-
-1. **VS Codeを起動**
-
-2. **拡張機能ビューを開く**
-   - **ショートカット**: `Ctrl + Shift + X`（Windows/Linux）または `Cmd + Shift + X`（Mac）
-   - **または**: 左サイドバーの拡張機能アイコン（四角が4つ並んだアイコン）をクリック
-
-3. **"Remote - WSL" を検索**
-   - 検索ボックスに `Remote - WSL` と入力
-   - **公式拡張機能**: 発行元が `Microsoft` であることを確認
-
-4. **インストールをクリック**
-   - 青い "Install" ボタンをクリック
-   - インストール完了まで数秒待機
-
-5. **インストール確認**
-   - 拡張機能の状態が "Installed" になっていることを確認
-   - VS Code左下に緑色のリモート接続アイコンが表示される
-
-**方法B: コマンドラインから**
+Windows環境でWSL2を使用している場合のみ必要です：
 
 ```bash
-# コマンドでインストール
+# VS Codeで拡張機能をインストール
 code --install-extension ms-vscode-remote.remote-wsl
 ```
 
----
-
-#### 🎯 Remote - WSLの主な機能
-
-| 機能 | 説明 | メリット |
-|------|------|---------|
-| **WSL2ファイルアクセス** | WSL2内のファイルを直接編集 | 高速なファイルアクセス |
-| **統合ターミナル** | WSL2のbashシェルを使用 | Linux環境で直接コマンド実行 |
-| **拡張機能の分離** | WSL専用拡張機能を管理 | 環境ごとの最適化 |
-| **Git統合** | WSL2内のGitを使用 | 改行コード問題の回避 |
-
----
-
-### 2.3 WSLからVS Codeを起動する方法
-
-#### 🚀 基本的な起動方法
-
-**方法1: コマンドラインから起動（最も一般的）**
-
-```bash
-# WSL2ターミナル（Ubuntu）で実行
-
-# カレントディレクトリをVS Codeで開く
-code .
-
-# 特定のディレクトリを開く
-code ~/projects/my-repo
-
-# 特定のファイルを開く
-code README.md
-
-# 新しいウィンドウで開く
-code -n .
-
-# 既存のウィンドウに追加
-code -a .
-```
-
-**初回起動時:**
-- "Installing VS Code Server..." というメッセージが表示
-- VS Code Serverが自動的にWSL2内にインストールされる
-- 完了まで30秒～1分程度待機
-
----
-
-#### 📁 実践的な使用例
-
-**シナリオ1: 新しいプロジェクトを開始**
-
-```bash
-# プロジェクトディレクトリを作成
-mkdir -p ~/projects/my-new-project
-cd ~/projects/my-new-project
-
-# VS Codeで開く
-code .
-```
-
-**シナリオ2: 既存のGitリポジトリを操作**
-
-```bash
-# リポジトリをクローン
-cd ~/projects
-git clone git@github.com:sas-com/example-repo.git
-
-# VS Codeで開く
-cd example-repo
-code .
-```
-
-**シナリオ3: 複数のプロジェクトを同時に開く**
-
-```bash
-# プロジェクトA
-cd ~/projects/project-a
-code .
-
-# プロジェクトB（新しいウィンドウで開く）
-cd ~/projects/project-b
-code -n .
-```
-
----
-
-#### 🎨 VS Code上での確認ポイント
-
-VS Codeが正しくWSL2に接続されているかを確認：
-
-1. **左下のリモート接続インジケーター**
-   - 緑色のアイコンに `WSL: Ubuntu` と表示
-   - クリックすると接続オプションが表示
-
-2. **統合ターミナルの確認**
-   - `Ctrl + ` ` （バッククォート）でターミナルを開く
-   - プロンプトが `yourname@HOSTNAME:~$` のようにWSL2のbash形式
-
-3. **ファイルパスの確認**
-   - エクスプローラーのパスが `/home/yourname/...` 形式
-   - Windows側（`/mnt/c/...`）ではないことを確認
-
----
-
-### 2.4 推奨拡張機能（Git関連）
-
-#### 🔌 必須拡張機能
-
-開発効率を大幅に向上させる拡張機能をインストールします。
-
----
-
-#### 📦 Git関連拡張機能
-
-**1. GitLens — Git supercharged**
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | `eamodio.gitlens` |
-| **目的** | Git機能の強化 |
-| **主な機能** | コミット履歴表示、ブレーム注釈、コミット比較 |
-| **推奨度** | ⭐⭐⭐ 必須 |
-
-**インストール:**
-```bash
-code --install-extension eamodio.gitlens
-```
-
-**主な機能：**
-- **Blame annotations**: 各行の最終変更者とコミット情報を表示
-- **File history**: ファイルの変更履歴を視覚的に表示
-- **Commit search**: コミットメッセージや変更内容を検索
-- **Repository insights**: リポジトリの統計情報
-
----
-
-**2. Git Graph**
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | `mhutchie.git-graph` |
-| **目的** | ブランチとコミット履歴の可視化 |
-| **主な機能** | グラフィカルなGitツリー表示 |
-| **推奨度** | ⭐⭐⭐ 必須 |
-
-**インストール:**
-```bash
-code --install-extension mhutchie.git-graph
-```
-
-**主な機能：**
-- ブランチ構造の視覚的表示
-- コミット間の関係性を理解
-- マージやリベースの影響を確認
-
----
-
-**3. Git History**
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | `donjayamanne.githistory` |
-| **目的** | ファイル/行の履歴表示 |
-| **主な機能** | コミット詳細、ファイル比較 |
-| **推奨度** | ⭐⭐ 推奨 |
-
-**インストール:**
-```bash
-code --install-extension donjayamanne.githistory
-```
-
----
-
-#### 🛠️ 開発支援拡張機能
-
-**4. EditorConfig for VS Code**
-
-```bash
-code --install-extension editorconfig.editorconfig
-```
-
-- **目的**: チーム全体でコーディングスタイルを統一
-- **機能**: `.editorconfig` ファイルに基づいてインデント、改行コードを自動設定
-
----
-
-**5. Markdown All in One**
-
-```bash
-code --install-extension yzhang.markdown-all-in-one
-```
-
-- **目的**: README.md等のMarkdownファイル編集支援
-- **機能**: プレビュー、目次生成、ショートカット
-
----
-
-**6. Better Comments**
-
-```bash
-code --install-extension aaron-bond.better-comments
-```
-
-- **目的**: コメントの視覚的強調
-- **機能**: TODO、FIXME、NOTE等をカラー表示
-
----
-
-#### 📦 一括インストール
-
-以下のコマンドで推奨拡張機能をまとめてインストール：
+#### 🚀 WSL2からVS Codeを起動
 
 ```bash
 # WSL2ターミナルで実行
-code --install-extension eamodio.gitlens
-code --install-extension mhutchie.git-graph
-code --install-extension donjayamanne.githistory
-code --install-extension editorconfig.editorconfig
-code --install-extension yzhang.markdown-all-in-one
-code --install-extension aaron-bond.better-comments
+cd ~/projects/my-repo
+code .
+
+# 初回起動時は VS Code Server が自動インストールされます
 ```
 
+### 2.3 Eclipseのインストール（Java開発者向け）
+
+Java開発者の場合は、Eclipse IDEも選択肢となります：
+
+1. 公式サイト（https://www.eclipse.org/）からダウンロード
+2. 適切なパッケージを選択（Eclipse IDE for Java Developers等）
+3. インストール実行
+
+## 🛠️ IDE統合設定（次のステップ）
+
+環境構築が完了したら、使用するIDEでのGit統合設定を行います。
+
+### Visual Studio Code
+
+VS Codeを使用する場合は、以下のガイドを参照してください：
+
+📖 **[VS Code Git統合完全ガイド](../implementation/IDE_VSCODE_GIT_GUIDE.md)**
+
+このガイドで学べる内容：
+- VS Code Git機能の初期設定
+- WSL2との連携設定
+- ソース管理ビューの使い方
+- GitLens、GitHub Pull Requests拡張機能
+- コミット作成とブランチ操作
+- コンフリクト解決方法
+
+### Eclipse
+
+Eclipseを使用する場合は、以下のガイドを参照してください：
+
+📖 **[Eclipse Git統合完全ガイド](../implementation/IDE_ECLIPSE_GIT_GUIDE.md)**
+
+このガイドで学べる内容：
+- EGitプラグインの設定
+- Git Repositories/Stagingビューの使い方
+- ブランチ操作とマージ
+- Historyビューの活用
+- 推奨プラグイン
+
 ---
 
-#### ✅ インストール確認
-
-```bash
-# インストール済み拡張機能の一覧表示
-code --list-extensions
-
-# 出力例:
-# aaron-bond.better-comments
-# donjayamanne.githistory
-# eamodio.gitlens
-# editorconfig.editorconfig
-# mhutchie.git-graph
-# yzhang.markdown-all-in-one
-```
+> 📝 **次のステップ**
+> 開発エディタの基本セットアップが完了したら、[第3章: Git環境の構築](#-第3章-git環境の構築) に進んでください。
 
 ---
 
-### 2.5 VS Codeの推奨設定
-
-#### ⚙️ WSL2環境向け設定
-
-> 💡 **settings.jsonについて**
-> VS Codeの設定ファイル（`settings.json`）は、エディタの動作をカスタマイズするための重要なファイルです。このセクションでは、Git開発に最適な設定を追加する方法を詳しく説明します。
-
----
+## 🔧 第3章: Git環境の構築
 
 #### 📋 設定の種類と違い
 
@@ -2400,10 +2068,15 @@ ssh -vT git@github.com
 
 ### 関連ドキュメント
 
+**基本ドキュメント：**
 - [全社GitHub運用ガイドライン](../../README.md)
 - [新規参画者向けオンボーディング](../ONBOARDING.md)
 - [クイックリファレンス](../../QUICK_REFERENCE.md)
 - [緊急時対応マニュアル](../../EMERGENCY_RESPONSE.md)
+
+**IDE統合ガイド：**
+- [VS Code Git統合完全ガイド](../implementation/IDE_VSCODE_GIT_GUIDE.md)
+- [Eclipse Git統合完全ガイド](../implementation/IDE_ECLIPSE_GIT_GUIDE.md)
 
 ---
 
