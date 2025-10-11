@@ -353,6 +353,11 @@ hotfix/[component]/[説明]     # 緊急修正
 - **[インフラチーム向け](./docs/team/TEAM_CUSTOMIZATION_INFRA.md)** 🆕 - DevOps/SRE
 - **[セキュリティチーム向け](./docs/team/TEAM_CUSTOMIZATION_SECURITY.md)** 🆕 - セキュリティ運用
 
+#### 🛠️ IDE統合ガイド
+- **[実装ガイドINDEX](./docs/implementation/README.md)** 🆕 - IDE統合ガイド一覧
+- **[VS Code Git統合ガイド](./docs/implementation/IDE_VSCODE_GIT_GUIDE.md)** 🆕 - VS Code完全活用
+- **[Eclipse Git統合ガイド](./docs/implementation/IDE_ECLIPSE_GIT_GUIDE.md)** 🆕 - EGit完全活用
+
 #### 🤖 自動化・ツール
 - **scripts/** - 自動化スクリプト群
   - github-automation/ - GitHub設定自動化
