@@ -33,6 +33,22 @@
 
 ---
 
+## 🛠️ IDE統合ガイド
+
+### Visual Studio Code
+- **[IDE_VSCODE_GIT_GUIDE.md](./IDE_VSCODE_GIT_GUIDE.md)**
+  - **目的**: VS CodeでのGit統合完全活用ガイド
+  - **概要**: VS Code Git機能の初期設定、WSL2連携、ソース管理ビュー、GitLens/GitHub Pull Requests拡張機能、コミット作成、ブランチ操作、コンフリクト解決
+  - **対象者**: VS Code利用者、全開発者
+
+### Eclipse
+- **[IDE_ECLIPSE_GIT_GUIDE.md](./IDE_ECLIPSE_GIT_GUIDE.md)**
+  - **目的**: EclipseでのGit統合完全活用ガイド
+  - **概要**: EGitプラグイン設定、Git Repositories/Stagingビュー、ブランチ操作、マージ、Historyビュー活用、推奨プラグイン
+  - **対象者**: Eclipse利用者、Java開発者
+
+---
+
 ## 🚀 CI/CD実装
 
 ### GitHub Actions

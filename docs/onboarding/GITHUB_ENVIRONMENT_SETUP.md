@@ -27,10 +27,9 @@
    - トラブルシューティング
 
 4. **[💻 第2章: 開発エディタの基本セットアップ](#-第2章-開発エディタの基本セットアップ)**
-   - VS Codeのインストール
-   - WSL2連携設定（Windows環境）
+   - VS Codeのインストール（推奨）
    - Eclipseのインストール（Java開発者向け）
-   - IDE統合設定へのリンク
+   - IDE統合設定（次のステップ）
 
 5. **[🔧 第3章: Git環境の構築](#-第3章-git環境の構築)**
    - Gitのインストール
@@ -662,99 +661,68 @@ tail -f /var/log/application.log
 | **前提条件** | WSL2完了（Windows）またはターミナルアクセス（Mac/Linux） |
 
 > 💡 **開発エディタについて**
-> 本章では、Git環境構築に必要な最小限のエディタセットアップのみ説明します。IDE固有の詳細な設定については、後述の「IDE統合設定ガイド」を参照してください。
+> 本章では、エディタの基本インストールのみ説明します。IDE固有のGit統合設定については、[実装ガイドINDEX](../implementation/README.md)から各IDEの詳細ガイドを参照してください。
 
 ---
 
 ### 2.1 VS Codeのインストール（推奨）
 
-#### 📋 基本インストール手順
+**基本インストール手順：**
 
-**Windows環境：**
-1. 公式サイト（https://code.visualstudio.com/）からダウンロード
-2. インストーラーを実行（**必ず「Add to PATH」にチェック**）
-3. インストール完了
+- **Windows**: [公式サイト](https://code.visualstudio.com/)からダウンロード、インストーラー実行（「Add to PATH」にチェック）
+- **Mac**: `brew install --cask visual-studio-code`
+- **Linux**: `sudo apt update && sudo apt install -y code`
 
-**Mac環境：**
+**インストール確認：**
 ```bash
-# Homebrewを使用（推奨）
-brew install --cask visual-studio-code
-```
-
-**Linux環境：**
-```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt install -y code
-
-# または公式サイトからダウンロード
-```
-
-#### ✅ インストール確認
-
-```bash
-# コマンドラインで確認
 code --version
 ```
 
-### 2.2 WSL2連携設定（Windows環境）
-
-#### 📥 Remote - WSL拡張機能のインストール
-
-Windows環境でWSL2を使用している場合のみ必要です：
-
+**Windows環境のWSL2連携：**
 ```bash
-# VS Codeで拡張機能をインストール
+# Remote-WSL拡張機能をインストール
 code --install-extension ms-vscode-remote.remote-wsl
-```
 
-#### 🚀 WSL2からVS Codeを起動
-
-```bash
-# WSL2ターミナルで実行
+# WSL2からVS Codeを起動
 cd ~/projects/my-repo
 code .
-
-# 初回起動時は VS Code Server が自動インストールされます
 ```
 
-### 2.3 Eclipseのインストール（Java開発者向け）
+### 2.2 Eclipseのインストール（Java開発者向け）
 
-Java開発者の場合は、Eclipse IDEも選択肢となります：
+**基本インストール手順：**
 
-1. 公式サイト（https://www.eclipse.org/）からダウンロード
+1. [公式サイト](https://www.eclipse.org/)からダウンロード
 2. 適切なパッケージを選択（Eclipse IDE for Java Developers等）
 3. インストール実行
 
+---
+
 ## 🛠️ IDE統合設定（次のステップ）
 
-環境構築が完了したら、使用するIDEでのGit統合設定を行います。
+エディタのインストールが完了したら、Git統合設定を行います。
+
+詳細な設定手順は **[実装ガイドINDEX](../implementation/README.md)** の「🛠️ IDE統合ガイド」セクションを参照してください。
 
 ### Visual Studio Code
 
-VS Codeを使用する場合は、以下のガイドを参照してください：
-
 📖 **[VS Code Git統合完全ガイド](../implementation/IDE_VSCODE_GIT_GUIDE.md)**
 
-このガイドで学べる内容：
-- VS Code Git機能の初期設定
-- WSL2との連携設定
-- ソース管理ビューの使い方
-- GitLens、GitHub Pull Requests拡張機能
-- コミット作成とブランチ操作
-- コンフリクト解決方法
+**目的**: VS CodeでのGit統合完全活用ガイド
+
+**学べる内容**: VS Code Git機能の初期設定、WSL2連携、ソース管理ビュー、GitLens/GitHub Pull Requests拡張機能、コミット作成、ブランチ操作、コンフリクト解決
+
+**対象者**: VS Code利用者、全開発者
 
 ### Eclipse
 
-Eclipseを使用する場合は、以下のガイドを参照してください：
-
 📖 **[Eclipse Git統合完全ガイド](../implementation/IDE_ECLIPSE_GIT_GUIDE.md)**
 
-このガイドで学べる内容：
-- EGitプラグインの設定
-- Git Repositories/Stagingビューの使い方
-- ブランチ操作とマージ
-- Historyビューの活用
-- 推奨プラグイン
+**目的**: EclipseでのGit統合完全活用ガイド
+
+**学べる内容**: EGitプラグイン設定、Git Repositories/Stagingビュー、ブランチ操作、マージ、Historyビュー活用、推奨プラグイン
+
+**対象者**: Eclipse利用者、Java開発者
 
 ---
 
