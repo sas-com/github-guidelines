@@ -98,7 +98,7 @@
 
 以下の環境構築が完了していることを前提とします：
 
-- ✅ WSL2のインストール（Windows環境）
+- ✅ WSL2のインストール
 - ✅ Gitのインストールと初期設定
 - ✅ GitHubアカウントの作成と2FA設定
 - ✅ SSH鍵の設定と登録
@@ -117,7 +117,7 @@ VS CodeはデフォルトでGit統合が有効になっていますが、確認�
 #### 設定の確認
 
 1. **コマンドパレットを開く**
-   - ショートカット: `Ctrl+Shift+P`（Windows/Linux）または `Cmd+Shift+P`（Mac）
+   - ショートカット: `Ctrl+Shift+P`
 
 2. **設定を開く**
    - 入力: `Preferences: Open Settings (UI)`
@@ -129,7 +129,7 @@ VS CodeはデフォルトでGit統合が有効になっていますが、確認�
 
 ### 1.2 WSL2環境との連携設定
 
-Windows環境でWSL2を使用している場合の設定：
+WSL2を使用した開発環境の設定：
 
 #### WSL拡張機能のインストール
 
@@ -218,7 +218,7 @@ ssh -T git@github.com
   "diffEditor.ignoreTrimWhitespace": false,
   "diffEditor.renderSideBySide": true,
 
-  // WSL2設定（Windows環境）
+  // WSL2設定
   "remote.WSL.enabled": true,
   "terminal.integrated.defaultProfile.linux": "bash",
 
@@ -937,7 +937,7 @@ GITHUB: ISSUES
 
 | 拡張機能 | 説明 | 必須度 |
 |----------|------|--------|
-| **WSL** | WSL2連携（Windows） | ⭐⭐⭐ |
+| **WSL** | WSL2連携 | ⭐⭐⭐ |
 | **EditorConfig** | コードスタイル統一 | ⭐⭐⭐ |
 | **Prettier** | コードフォーマッター | ⭐⭐⭐ |
 | **ESLint** | JavaScript Linter | ⭐⭐ |
@@ -1099,7 +1099,7 @@ ssh -T git@github.com
 
 #### ファイルパーミッションの問題
 
-**問題**: Windowsファイルシステムでパーミッションエラー
+**問題**: ファイルシステムでパーミッションエラー
 
 **解決方法**:
 ```bash

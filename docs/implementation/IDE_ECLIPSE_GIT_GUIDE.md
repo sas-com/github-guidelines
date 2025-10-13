@@ -73,7 +73,7 @@ EclipseのEGit統合機能を使用して、効率的にGitバージョン管理
 
 #### グローバル設定
 
-1. **Window → Preferences（Mac: Eclipse → Preferences）**
+1. **Window → Preferences**
 2. **Team → Git → Configuration を選択**
 3. **User Settings タブで Add Entry をクリック**
 
@@ -107,7 +107,7 @@ GitHubにSSH鍵を登録する際は、以下の命名規則に従ってくだ�
   - 例: `SAS-PC-R-123-Eclipse`（PC識別IDがR-123の場合）
   - **注意**: XXXの部分は実際のPC識別IDに置き換えてください
 
-### 2.3 WSL2環境との連携設定（Windows環境の場合）
+### 2.3 WSL2環境との連携設定
 
 #### WSL2内のプロジェクトをEclipseで開く
 

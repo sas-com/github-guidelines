@@ -287,7 +287,7 @@ git commit --amend -m "新しいメッセージ"
 
 ### インストール
 ```bash
-# Windows (WSL2で実行)
+# WSL2のUbuntu内で実行
 sudo apt install gh
 
 # Windows (winget)
