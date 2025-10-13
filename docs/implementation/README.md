@@ -11,7 +11,54 @@
 
 ---
 
-## 🛠️ IDE統合ガイド
+## 🛠️ 開発ツールガイド
+
+### Windows Terminal（任意）
+
+**[WINDOWS_TERMINAL_GUIDE.md](./WINDOWS_TERMINAL_GUIDE.md)**
+
+| 項目 | 内容 |
+|------|------|
+| **目的** | Windows TerminalでWSL2とGit作業を効率化 |
+| **概要** | Windows Terminalのインストール、基本設定、WSL2連携、ショートカット、テーマカスタマイズ、トラブルシューティング |
+| **対象者** | Windows環境のWSL2利用者 |
+| **所要時間** | 15-30分（インストール・設定） |
+| **利用** | **任意**（標準のコマンドプロンプト/PowerShellでも作業可能） |
+
+**主な内容:**
+
+1. **Windows Terminalの概要**
+   - 従来のツールとの比較
+   - 開発効率への影響
+   - 利用が任意である理由
+
+2. **インストール方法**
+   - Microsoft Store（推奨）
+   - GitHub直接ダウンロード
+   - Wingetパッケージマネージャー
+
+3. **基本設定とWSL2連携**
+   - 設定ファイル（settings.json）の編集
+   - 推奨設定項目
+   - WSL2プロファイルの最適化
+
+4. **効率的な使い方**
+   - ショートカット一覧
+   - タブとペインの活用
+   - 実践的な活用例
+
+5. **カスタマイズ**
+   - テーマ設定
+   - フォント選択
+   - 見た目の調整
+
+6. **トラブルシューティング**
+   - WSL2が表示されない
+   - 日本語の文字化け
+   - コピー＆ペーストの問題
+   - その他のよくある問題
+
+---
 
 ### Visual Studio Code
 
@@ -105,11 +152,15 @@
    - [GitHub環境構築ガイド](../onboarding/GITHUB_ENVIRONMENT_SETUP.md)を参照
    - WSL2、Git、GitHubアカウントの設定を完了
 
-2. **使用するIDEを選択**
+2. **Windows Terminal の検討（任意・Windows環境のみ）**
+   - より快適な開発体験を求める場合 → [WINDOWS_TERMINAL_GUIDE.md](./WINDOWS_TERMINAL_GUIDE.md)
+   - 標準のコマンドプロンプト/PowerShellで十分な場合 → スキップ可能
+
+3. **使用するIDEを選択**
    - VS Code利用者 → [IDE_VSCODE_GIT_GUIDE.md](./IDE_VSCODE_GIT_GUIDE.md)
    - Eclipse利用者 → [IDE_ECLIPSE_GIT_GUIDE.md](./IDE_ECLIPSE_GIT_GUIDE.md)
 
-3. **ガイドに従って設定**
+4. **ガイドに従って設定**
    - 各ガイドの手順に従ってIDE統合設定を実施
    - 推奨拡張機能/プラグインをインストール
    - 動作確認を実施
@@ -141,7 +192,7 @@
 
 ## 📝 メンテナンス情報
 
-- **最終更新**: 2025-10-11
+- **最終更新**: 2025-10-13
 - **メンテナー**: SAS GitHub管理チーム
 - **レビューサイクル**: 四半期ごと
 - **フィードバック**: github@sas-com.com
