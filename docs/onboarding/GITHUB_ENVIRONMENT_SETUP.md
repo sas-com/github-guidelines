@@ -367,7 +367,321 @@ Restart-Computer
 > 🎯 **インストール方法の選択**
 > WSL2のインストールには**3つの方法**があります。状況に応じて選択してください。
 
-（以下、既存の残りコンテンツは変更せず省略）...
+#### 📊 インストール方法の比較
+
+| 方法 | 推奨度 | 特徴 | 適している人 |
+|------|--------|------|--------------|
+| **方法1: 簡単インストール** | ⭐⭐⭐ | コマンド1つで完了、Ubuntu-24.04が自動インストール | 初めての方、推奨ディストリビューションで問題ない方 |
+| **方法2: 手動インストール** | ⭐⭐ | ディストリビューション選択可能、詳細な制御 | 特定のLinuxディストリが必要な方、過去にエラーが発生した方 |
+| **方法3: Microsoft Store** | ⭐ | GUI操作で分かりやすい | コマンド操作が苦手な方 |
+
+#### 🔄 インストール方法の選択フローチャート
+
+```mermaid
+graph TD
+    A[WSL2をインストールしたい] --> B{初めてのインストール？}
+    B -->|はい| C{推奨のUbuntuで問題ない？}
+    B -->|いいえ| D{以前エラーが発生した？}
+    C -->|はい| E[方法1: 簡単インストール]
+    C -->|いいえ| F[方法2: 手動インストール]
+    D -->|はい| F
+    D -->|いいえ| G{コマンド操作に慣れている？}
+    G -->|はい| F
+    G -->|いいえ| H[方法3: Microsoft Store]
+
+    style E fill:#90EE90,color:#000
+    style F fill:#FFE4B5,color:#000
+    style H fill:#ADD8E6,color:#000
+```
+
+---
+
+#### 📝 方法1: 簡単インストール（推奨）
+
+**最もシンプルな方法**です。コマンド1つでWSL2とUbuntu-24.04 LTSが自動的にインストールされます。
+
+PowerShellを**管理者として実行**：
+
+```powershell
+# ステップ1: WSL2と既定のUbuntuを一括インストール
+wsl --install
+
+# ステップ2: PCを再起動（必須）
+Restart-Computer
+```
+
+> ✅ **成功時の出力例：**
+> ```
+> Installing: Virtual Machine Platform
+> Virtual Machine Platform has been installed.
+> Installing: Windows Subsystem for Linux
+> Windows Subsystem for Linux has been installed.
+> Installing: Ubuntu
+> Ubuntu has been installed.
+> The requested operation is successful. Changes will not be effective until the system is rebooted.
+> ```
+
+> ℹ️ **補足**: `wsl --install` は Ubuntu-24.04 LTS（2025年12月時点の既定）をインストールします。別のディストリビューションが必要な場合は方法2を使用してください。
+
+---
+
+#### 📝 方法2: 手動インストール
+
+**ディストリビューションを選択**したい場合や、**より詳細な制御**が必要な場合に使用します。
+
+PowerShellを**管理者として実行**：
+
+```powershell
+# ステップ1: WSLカーネルを最新版に更新
+wsl --update
+
+# ステップ2: WSL2を既定のバージョンに設定
+wsl --set-default-version 2
+
+# ステップ3: 利用可能なディストリビューション一覧を表示
+wsl --list --online
+```
+
+**利用可能なディストリビューション一覧（2025年12月時点）：**
+
+| ディストリビューション | パッケージマネージャー | 推奨度 | 備考 |
+|------------------------|------------------------|--------|------|
+| **Ubuntu-24.04** | apt | ⭐⭐⭐ | **SAS標準開発環境**、豊富なドキュメント |
+| Ubuntu-22.04 | apt | ⭐⭐ | 安定版、長期サポート |
+| Debian | apt | ⭐⭐ | 軽量、安定重視 |
+| openSUSE-Tumbleweed | zypper | ⭐ | 最新パッケージ |
+| SUSE-Linux-Enterprise-15-SP6 | zypper | ⭐ | エンタープライズ向け |
+| Oracle Linux 9.1 | dnf | ⭐ | Oracle環境向け |
+| Oracle Linux 8.7 | dnf | ⭐ | Oracle環境向け |
+
+```powershell
+# ステップ4: Ubuntu-24.04をインストール（推奨）
+wsl --install -d Ubuntu-24.04
+
+# ステップ5: PCを再起動（必須）
+Restart-Computer
+```
+
+> 💡 **ヒント**: サーバー環境がAmazon Linuxの場合でも、**開発環境はUbuntuを推奨**します。理由：
+> - チーム内でのサポート体制が充実
+> - ドキュメントが豊富
+> - 本番環境との差異はDockerで吸収可能
+
+---
+
+#### 📝 方法3: Microsoft Store経由
+
+**GUI操作**でインストールしたい場合に使用します。
+
+1. **Microsoft Storeを開く**
+   - タスクバーの検索で「Microsoft Store」と入力
+   - または `Win + S` → 「store」と入力
+
+2. **Ubuntuを検索**
+   - 検索バーに「Ubuntu」と入力
+   - 「**Ubuntu 24.04 LTS**」を選択
+
+3. **インストール**
+   - 「入手」または「インストール」ボタンをクリック
+   - インストール完了を待つ
+
+4. **起動**
+   - 「開く」ボタンをクリック
+   - または、スタートメニューから「Ubuntu 24.04 LTS」を起動
+
+5. **PCを再起動**（推奨）
+
+---
+
+#### ✅ インストール確認
+
+インストール完了後、以下のコマンドで確認：
+
+```powershell
+# インストール済みディストリビューションの確認
+wsl --list --verbose
+```
+
+**期待される出力：**
+
+```
+  NAME            STATE           VERSION
+* Ubuntu-24.04    Running         2
+```
+
+> ⚠️ **VERSION が「1」の場合**：WSL1でインストールされています。以下で変換：
+> ```powershell
+> wsl --set-version Ubuntu-24.04 2
+> ```
+
+---
+
+### 1.4 Ubuntu初期設定
+
+#### 🔧 初回起動時の設定
+
+Ubuntuを初めて起動すると、ユーザーアカウントの作成を求められます。
+
+```bash
+# ステップ1: ユーザー名を入力
+# ※ 英数字小文字のみ使用可能（記号・大文字不可）
+Enter new UNIX username: yourname
+
+# ステップ2: パスワードを設定
+# ※ 入力中は画面に表示されません（セキュリティのため）
+New password:
+Retype new password:
+```
+
+> ⚠️ **パスワードについての重要事項：**
+> - このパスワードは**Linux管理者権限（sudo）**のパスワードです
+> - `sudo` コマンド実行時に毎回必要になります
+> - **入力中は画面に何も表示されません**（セキュリティ仕様）
+> - 忘れないようにメモを取ってください
+> - **8文字以上の複雑なパスワード**を推奨
+
+#### 📦 基本パッケージの更新とインストール
+
+```bash
+# ステップ3: パッケージリストを更新
+sudo apt update
+
+# ステップ4: インストール済みパッケージを最新版に更新
+sudo apt upgrade -y
+
+# ステップ5: 開発に必要な基本ツールをインストール
+sudo apt install -y git curl wget build-essential
+```
+
+> ✅ **成功時のポイント：**
+> - `apt update`: 「Reading package lists... Done」で完了
+> - `apt upgrade`: 「0 upgraded, 0 newly installed...」または更新完了メッセージ
+> - `apt install`: 「Processing triggers...」で完了
+
+#### ✅ 初期設定確認
+
+```bash
+# Gitがインストールされたか確認
+git --version
+
+# 期待される出力例
+# git version 2.43.0
+```
+
+---
+
+### 1.5 Windows Terminal の活用（推奨）
+
+Windows Terminalは、複数のシェル（PowerShell、Ubuntu、CMD）を**タブで管理**できる便利なターミナルアプリです。
+
+#### 📊 Windows Terminalの特徴
+
+| 機能 | 説明 |
+|------|------|
+| **タブ機能** | 複数のセッションを1つのウィンドウで管理 |
+| **画面分割** | 横・縦に画面を分割して同時作業 |
+| **Unicode対応** | 日本語や絵文字を正しく表示 |
+| **カスタマイズ** | テーマ、フォント、背景などを変更可能 |
+| **WSL統合** | Ubuntu等のLinuxシェルにワンクリックでアクセス |
+
+#### 📝 インストール方法
+
+**Microsoft Store経由（推奨）：**
+
+1. Microsoft Storeを開く
+2. 「**Windows Terminal**」で検索
+3. 「入手」をクリック
+
+**または、PowerShell（管理者）で：**
+
+```powershell
+winget install --id Microsoft.WindowsTerminal -e
+```
+
+#### 🔧 基本的な使い方
+
+| 操作 | ショートカット |
+|------|----------------|
+| 新しいタブ | `Ctrl + Shift + T` |
+| タブを閉じる | `Ctrl + Shift + W` |
+| Ubuntu タブを開く | `Ctrl + Shift + 3`（既定の場合） |
+| 画面を横に分割 | `Alt + Shift + +` |
+| 画面を縦に分割 | `Alt + Shift + -` |
+| 設定を開く | `Ctrl + ,` |
+
+---
+
+### 1.6 トラブルシューティング
+
+#### 🔧 よくあるエラーと解決方法
+
+| エラーコード | エラー内容 | 原因 | 解決方法 |
+|-------------|-----------|------|----------|
+| **0x80370114** | WSL2を実行するには、カーネルコンポーネントの更新が必要です | WSLカーネル未インストール/古い | `wsl --update` を実行 |
+| **0x800701bc** | WSL 2 requires an update to its kernel component | WSL2カーネル未インストール | [WSL2 Linuxカーネル更新パッケージ](https://aka.ms/wsl2kernel)をインストール |
+| **0x80370102** | 仮想マシンを起動できませんでした | Hyper-V未有効 | 下記コマンドを実行後、再起動 |
+| **0x80040326** | WSL機能が正しく有効化されていません | Windows機能未有効 | 1.2の手順を再実行 |
+| **0x80004005** | 予期しないエラー | 複数の原因が考えられる | PCを再起動し、再試行 |
+
+#### 📝 エラー0x80370102の解決方法
+
+```powershell
+# PowerShell（管理者）で実行
+bcdedit /set hypervisorlaunchtype auto
+
+# PCを再起動
+Restart-Computer
+```
+
+#### 📝 WSLの完全リセット（最終手段）
+
+すべての方法を試しても解決しない場合：
+
+```powershell
+# ステップ1: WSLをアンインストール
+wsl --unregister Ubuntu-24.04
+
+# ステップ2: WSLを再インストール
+wsl --install -d Ubuntu-24.04
+
+# ステップ3: PCを再起動
+Restart-Computer
+```
+
+> ⚠️ **警告**: `--unregister` を実行すると、**そのディストリビューション内のすべてのデータが削除**されます。重要なデータがある場合は事前にバックアップしてください。
+
+---
+
+### ✅ 第1章完了チェックリスト
+
+以下の項目をすべて確認してから、第2章へ進んでください：
+
+- [ ] WSL2がインストールされている（`wsl --list --verbose` で VERSION が 2）
+- [ ] Ubuntuが起動できる
+- [ ] Ubuntuでユーザーアカウントを作成した
+- [ ] `sudo apt update && sudo apt upgrade` が正常に完了した
+- [ ] `git --version` でGitバージョンが表示される
+
+```bash
+# 一括確認コマンド（Ubuntu内で実行）
+echo "=== WSL2 環境確認 ===" && \
+echo "User: $(whoami)" && \
+echo "Git: $(git --version)" && \
+echo "Ubuntu: $(lsb_release -d | cut -f2)" && \
+echo "=== 確認完了 ==="
+```
+
+**期待される出力例：**
+
+```
+=== WSL2 環境確認 ===
+User: yourname
+Git: git version 2.43.0
+Ubuntu: Ubuntu 24.04.1 LTS
+=== 確認完了 ===
+```
+
+---
 
 ## 📞 サポート情報
 
