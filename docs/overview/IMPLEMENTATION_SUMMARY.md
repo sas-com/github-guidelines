@@ -98,9 +98,9 @@
 ### 🚀 **自動セットアップスクリプト**
 ```bash
 # チーム別環境構築
-scripts/dev-team-setup.sh      # 開発環境
-scripts/infra-team-setup.sh    # インフラ環境  
-scripts/security-team-setup.sh # セキュリティ環境
+scripts/sas-develop-team-setup.sh    # 開発環境
+scripts/sas-platform-team-setup.sh   # インフラ環境  
+scripts/sas-security-team-setup.sh   # セキュリティ環境
 ```
 
 ---

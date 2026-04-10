@@ -15,10 +15,10 @@ updates:
     # Security updates get priority
     priority: 1
     reviewers:
-      - "security-team"
-      - "dev-team"
+      - "sas-security-team"
+      - "sas-develop-team"
     assignees:
-      - "security-team"
+      - "sas-security-team"
     labels:
       - "dependencies"
       - "javascript"
@@ -68,8 +68,8 @@ updates:
     open-pull-requests-limit: 5
     priority: 1
     reviewers:
-      - "security-team"
-      - "python-team"
+      - "sas-security-team"
+      - "sas-python-team"
     labels:
       - "dependencies"
       - "python"
@@ -104,8 +104,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "go-team"
+      - "sas-security-team"
+      - "sas-go-team"
     labels:
       - "dependencies"
       - "golang"
@@ -130,8 +130,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "java-team"
+      - "sas-security-team"
+      - "sas-java-team"
     labels:
       - "dependencies"
       - "java"
@@ -156,8 +156,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "ruby-team"
+      - "sas-security-team"
+      - "sas-ruby-team"
     labels:
       - "dependencies"
       - "ruby"
@@ -178,8 +178,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "devops-team"
+      - "sas-security-team"
+      - "sas-devops-team"
     labels:
       - "dependencies"
       - "docker"
@@ -207,8 +207,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "devops-team"
+      - "sas-security-team"
+      - "sas-devops-team"
     labels:
       - "dependencies"
       - "github-actions"
@@ -233,8 +233,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "infrastructure-team"
+      - "sas-security-team"
+      - "sas-infrastructure-team"
     labels:
       - "dependencies"
       - "terraform"
@@ -256,8 +256,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "php-team"
+      - "sas-security-team"
+      - "sas-php-team"
     labels:
       - "dependencies"
       - "php"
@@ -278,8 +278,8 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     reviewers:
-      - "security-team"
-      - "dotnet-team"
+      - "sas-security-team"
+      - "sas-dotnet-team"
     labels:
       - "dependencies"
       - "dotnet"

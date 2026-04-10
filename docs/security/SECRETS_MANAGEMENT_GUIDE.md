@@ -421,7 +421,7 @@ teams_permissions:
       - sas-admin-1
       - sas-admin-2
     
-  sas-tech-leads:
+  sas-techlead-team:
     permissions:
       - maintain
       - secrets_read

@@ -118,10 +118,10 @@ main:
     restrictions:
       push:
         users: []
-        teams: ["github-admin-team"]
+        teams: ["sas-admin-team"]
       merge:
         users: []
-        teams: ["release-managers", "github-admin-team"]
+        teams: ["sas-release-team", "sas-admin-team"]
     
     # その他設定
     enforce_admins: true
@@ -149,9 +149,9 @@ staging:
     
     restrictions:
       push:
-        teams: ["dev-team", "qa-team", "github-admin-team"]
+        teams: ["sas-develop-team", "sas-qa-team", "sas-admin-team"]
       merge:
-        teams: ["tech-leads", "qa-leads", "github-admin-team"]
+        teams: ["sas-techlead-team", "sas-qa-team", "sas-admin-team"]
     
     enforce_admins: false
     allow_force_pushes: false
@@ -176,9 +176,9 @@ dev:
     
     restrictions:
       push:
-        teams: ["dev-team", "github-admin-team"]
+        teams: ["sas-develop-team", "sas-admin-team"]
       merge:
-        teams: ["dev-team", "github-admin-team"]
+        teams: ["sas-develop-team", "sas-admin-team"]
     
     enforce_admins: false
     allow_force_pushes: false
@@ -274,81 +274,81 @@ echo "*.md merge=ours" >> .gitattributes
 # /CODEOWNERS
 
 # Global rules
-* @sas-com/github-admin-team
+* @sas-com/sas-admin-team
 
 # Web/Mobile Application
-/src/components/ @sas-com/frontend-team
-/src/pages/ @sas-com/frontend-team
-/public/ @sas-com/frontend-team
-/mobile/ @sas-com/mobile-team
+/src/components/ @sas-com/sas-product-frontend-team
+/src/pages/ @sas-com/sas-product-frontend-team
+/public/ @sas-com/sas-product-frontend-team
+/mobile/ @sas-com/sas-mobile-team
 
 # API/Backend
-/src/api/ @sas-com/backend-team
-/src/controllers/ @sas-com/backend-team
-/src/services/ @sas-com/backend-team
-/src/models/ @sas-com/backend-team
+/src/api/ @sas-com/sas-product-backend-team
+/src/controllers/ @sas-com/sas-product-backend-team
+/src/services/ @sas-com/sas-product-backend-team
+/src/models/ @sas-com/sas-product-backend-team
 
 # Library/Package
-/lib/ @sas-com/library-maintainers
-/dist/ @sas-com/library-maintainers
-package.json @sas-com/library-maintainers
+/lib/ @sas-com/sas-library-team
+/dist/ @sas-com/sas-library-team
+package.json @sas-com/sas-library-team
 
 # Microservices (if applicable)
-/services/ @sas-com/service-team
-/microservices/ @sas-com/service-team
+/services/ @sas-com/sas-service-team
+/microservices/ @sas-com/sas-service-team
 
 # Shared/Common
-/shared/ @sas-com/platform-team
-/common/ @sas-com/platform-team
-/utils/ @sas-com/platform-team
+/shared/ @sas-com/sas-platform-team
+/common/ @sas-com/sas-platform-team
+/utils/ @sas-com/sas-platform-team
 
 # Configuration & Infrastructure
-/config/ @sas-com/devops-team
-/infrastructure/ @sas-com/devops-team
-/k8s/ @sas-com/devops-team
-/.github/ @sas-com/github-admin-team
-/docker/ @sas-com/devops-team
+/config/ @sas-com/sas-devops-team
+/infrastructure/ @sas-com/sas-devops-team
+/k8s/ @sas-com/sas-devops-team
+/.github/ @sas-com/sas-admin-team
+/docker/ @sas-com/sas-devops-team
 
 # Database
-/migrations/ @sas-com/database-team
-/schemas/ @sas-com/database-team
-/sql/ @sas-com/database-team
+/migrations/ @sas-com/sas-database-team
+/schemas/ @sas-com/sas-database-team
+/sql/ @sas-com/sas-database-team
 
 # Testing
-/tests/ @sas-com/qa-team
-/e2e/ @sas-com/qa-team
-/__tests__/ @sas-com/qa-team
+/tests/ @sas-com/sas-qa-team
+/e2e/ @sas-com/sas-qa-team
+/__tests__/ @sas-com/sas-qa-team
 
 # Security
-/security/ @sas-com/security-team
-/secrets/ @sas-com/security-team
+/security/ @sas-com/sas-security-team
+/secrets/ @sas-com/sas-security-team
 
 # Documentation
-/docs/ @sas-com/tech-writers
-/README.md @sas-com/tech-writers
-/CHANGELOG.md @sas-com/tech-writers
+/docs/ @sas-com/sas-techwriter-team
+/README.md @sas-com/sas-techwriter-team
+/CHANGELOG.md @sas-com/sas-techwriter-team
 ```
 
 ### 4.2 チーム権限マトリクス
 ```yaml
 teams:
-  github-admin-team:
+  sas-admin-team:
     permissions: ["admin"]
     repositories: ["all"]
     
-  release-managers:
+  sas-release-team:
     permissions: ["write"]
     branches: ["main", "staging"]
     
-  tech-leads:
+  sas-techlead-team:
     permissions: ["write"] 
     branches: ["staging", "dev"]
     
-  dev-team:
+  sas-develop-team:
     permissions: ["write"]
     branches: ["dev", "feature/*", "bugfix/*"]
     
-  qa-team:
+  sas-qa-team:
     permissions: ["read", "write"]
     branches: ["staging", "dev"]
     focus: ["testing", "quality-assurance"]

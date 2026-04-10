@@ -103,7 +103,7 @@ gh pr create --title "feat(user-service): Add email validation feature" \
 Closes #${ISSUE_NUMBER}
 EOF
 )" \
-             --reviewer "@sas-com/user-service-team" \
+             --reviewer "@sas-com/sas-service-team" \
              --assignee "@me"
 
 # 2. PR URL の確認
@@ -177,7 +177,7 @@ $(git log --oneline origin/staging..origin/dev --pretty=format:"- %s")
 EOF
 )" \
              --base staging \
-             --reviewer "@sas-com/qa-team,@sas-com/tech-leads"
+             --reviewer "@sas-com/sas-qa-team,@sas-com/sas-techlead-team"
 ```
 
 #### 1.3.2 staging → main 昇格
@@ -198,7 +198,7 @@ git merge origin/staging --no-ff
 gh pr create --title "release: v$(./scripts/calculate-next-version.sh)" \
              --body "$(cat release-notes/$(date +%Y-%m-%d).md)" \
              --base main \
-             --reviewer "@sas-com/release-managers" \
+             --reviewer "@sas-com/sas-release-team" \
              --label "release"
 ```
 

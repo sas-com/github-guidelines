@@ -787,7 +787,7 @@ echo "=== Health Check Complete ==="
 
 - **インフラチーム**: infra@sas-com.com
 - **24時間対応**: oncall@sas-com.com
-- **Slackチャンネル**: #infra-team
+- **Slackチャンネル**: #sas-platform-team
 - **PagerDuty**: sas-infrastructure
 
 ---

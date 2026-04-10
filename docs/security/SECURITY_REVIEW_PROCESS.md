@@ -244,12 +244,12 @@ jobs:
 ```yaml
 # .github/CODEOWNERS
 # セキュリティクリティカルなファイル
-/src/auth/                @security-team
-/src/crypto/              @security-team
-/src/api/authentication/  @security-team
-*.env*                    @security-team
-*secret*                  @security-team
-/infrastructure/          @devops-team @security-team
+/src/auth/                @sas-com/sas-security-team
+/src/crypto/              @sas-com/sas-security-team
+/src/api/authentication/  @sas-com/sas-security-team
+*.env*                    @sas-com/sas-security-team
+*secret*                  @sas-com/sas-security-team
+/infrastructure/          @sas-com/sas-devops-team @sas-com/sas-security-team
 ```
 
 #### レビュープロセス

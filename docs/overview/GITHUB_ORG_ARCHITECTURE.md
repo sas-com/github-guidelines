@@ -131,7 +131,88 @@ topics:
 
 ## 👥 Team構造とRole設定
 
-### 1. 組織階層とTeam構成
+### 1. Team命名規則（ネーミングルール）
+
+#### 基本ルール
+
+| 項目 | ルール |
+|------|--------|
+| 使用可能文字 | 小文字英数字とハイフン(`-`)のみ |
+| 区切り文字 | ハイフン(`-`) |
+| 末尾 | 必ず`-team`で終わる |
+| 略称 | 2〜4文字の英小文字（顧客名・プロジェクト名など） |
+| 最大長 | 40文字以内を推奨 |
+
+#### 命名パターン
+
+Teamは以下の3カテゴリに分類し、それぞれのパターンに従って命名する。
+
+**① プロジェクトTeam（`pj-`プレフィクス）**
+
+クライアント案件・プロダクト開発などプロジェクト単位のTeam。
+
+```
+pj-[顧客略称]-[システム略称]-team          ← 親Team
+pj-[顧客略称]-[システム略称]-admin-team    ← 子Team（管理者）
+pj-[顧客略称]-[システム略称]-dev-team      ← 子Team（開発者）
+pj-[顧客略称]-[システム略称]-read-team     ← 子Team（閲覧者）
+```
+
+| Team名 | 説明 |
+|---------|------|
+| `pj-djns-salesmanager-team` | 同仁プロジェクト親Team |
+| `pj-djns-salesmanager-admin-team` | 同仁管理者チーム |
+| `pj-djns-salesmanager-dev-team` | 同仁開発者チーム |
+| `pj-mstl-mirai-team` | MSプロジェクト親Team |
+| `pj-mstl-mirai-admin-team` | MS管理者チーム |
+| `pj-mstl-mirai-dev-team` | MS開発者チーム |
+| `pj-mstl-mirai-read-team` | MS閲覧チーム |
+
+**② 組織横断Team（`sas-`プレフィクス）**
+
+特定プロジェクトに属さない、組織全体に関わるTeam。
+
+```
+sas-[機能/役割]-team
+```
+
+| Team名 | 説明 |
+|---------|------|
+| `sas-platform-team` | SAS基盤運用チーム |
+| `sas-develop-team` | SAS開発チーム |
+| `sas-skillhub-team` | スキル標準推進チーム |
+
+**③ タスクフォース/特別Team（`dx-`等のテーマプレフィクス）**
+
+期間限定や特定テーマのためのTeam。
+
+```
+[テーマ]-[目的]-team
+```
+
+| Team名 | 説明 |
+|---------|------|
+| `dx-ai-team` | DX推進AIタスクフォースチーム |
+
+#### 子Team（ネストTeam）の権限サフィックス
+
+プロジェクトTeamの子Teamには、権限レベルを示すサフィックスを付ける。
+
+| サフィックス | 権限 | 用途 |
+|-------------|------|------|
+| `-admin-team` | Admin | リポジトリ設定変更、メンバー管理 |
+| `-dev-team` | Write | コードのプッシュ、PR作成 |
+| `-read-team` | Read | 閲覧のみ（クライアント・ステークホルダー向け） |
+
+#### 命名時の禁止事項
+
+- アンダースコア(`_`)やスペースの使用
+- 大文字の使用
+- 個人名をTeam名に含めること
+- `-team`サフィックスの省略
+- 略称なしの長い正式名称の使用（例: ✗ `project-dojinkai-sales-manager-team`）
+
+### 2. 組織階層とTeam構成（現行）
 
 ```yaml
 Organization Owners (2-3名):
@@ -139,47 +220,55 @@ Organization Owners (2-3名):
   - 技術統括責任者
   権限: 組織全体の最高権限
 
-Core Teams:
-  ├── admin-team (3-5名)
+Core Teams（組織横断: sas-プレフィクス）:
+  ├── sas-admin-team (3-5名)
   │   役割: 組織全体の管理
   │   権限: Admin権限（Ownersを除く全権限）
   │
-  ├── security-team (2-3名)
+  ├── sas-security-team (2-3名)
   │   役割: セキュリティ監査・ポリシー管理
   │   権限: 全リポジトリのRead + Security alerts管理
   │
-  └── platform-team (3-5名)
+  └── sas-platform-team (3-5名)
       役割: CI/CD・インフラ管理
       権限: インフラ系リポジトリのAdmin
 
-Product Teams:
-  ├── product-core-team (5-10名)
+Product Teams（組織横断: sas-プレフィクス）:
+  ├── sas-product-core-team (5-10名)
   │   役割: プロダクト開発のコアチーム
   │   権限: prod-*リポジトリのMaintain/Write
   │
-  ├── product-frontend-team (5-8名)
+  ├── sas-product-frontend-team (5-8名)
   │   役割: フロントエンド開発
   │   権限: *-frontendリポジトリのWrite
   │
-  └── product-backend-team (5-8名)
+  └── sas-product-backend-team (5-8名)
       役割: バックエンド開発
       権限: *-backend, *-apiリポジトリのWrite
 
-Client Teams:
-  ├── client-[abc]-team (3-5名/クライアント)
-  │   役割: 特定クライアント案件担当
-  │   権限: client-abc-*リポジトリのMaintain
+Client Teams（プロジェクト: pj-プレフィクス）:
+  ├── pj-[abc]-[system]-team (3-5名/クライアント)
+  │   役割: 特定クライアント案件担当（親Team）
+  │   権限: 該当リポジトリのRead
   │
-  └── client-support-team (3-5名)
-      役割: クライアントサポート
+  ├── pj-[abc]-[system]-admin-team (子Team)
+  │   役割: クライアント案件管理者
+  │   権限: 該当リポジトリのAdmin
+  │
+  ├── pj-[abc]-[system]-dev-team (子Team)
+  │   役割: クライアント案件開発者
+  │   権限: 該当リポジトリのWrite
+  │
+  └── sas-client-support-team (3-5名)
+      役割: クライアントサポート（組織横断）
       権限: 全client-*リポジトリのRead
 
-Internal Teams:
-  ├── internal-dev-team (3-5名)
+Internal Teams（組織横断: sas-プレフィクス）:
+  ├── sas-internal-dev-team (3-5名)
   │   役割: 社内システム開発
   │   権限: internal-*リポジトリのWrite
   │
-  └── qa-team (3-5名)
+  └── sas-qa-team (3-5名)
       役割: 品質保証
       権限: 全リポジトリのRead + Issue/PR作成
 
@@ -189,7 +278,7 @@ External Collaborators:
       権限: 特定リポジトリ・期間限定のWrite
 ```
 
-### 2. Role権限マトリックス
+### 3. Role権限マトリックス
 
 | Role | Read | Triage | Write | Maintain | Admin | 用途 |
 |------|------|--------|-------|----------|-------|------|
@@ -199,28 +288,30 @@ External Collaborators:
 | **Triage** | ✅ | ✅ | ❌ | ❌ | ❌ | サポート・QA |
 | **Read** | ✅ | ❌ | ❌ | ❌ | ❌ | 閲覧のみ |
 
-### 3. Team別権限設定
+### 4. Team別権限設定
 
 ```yaml
-# プロダクト開発チーム
-product-core-team:
+# プロダクト開発チーム（組織横断）
+sas-product-core-team:
   prod-*: Maintain
   lib-*: Write
   template-*: Read
 
-# クライアントチーム
-client-abc-team:
-  client-abc-*: Maintain
-  lib-*: Read
-  template-*: Read
+# クライアントチーム（プロジェクト単位）
+pj-abc-ecsite-admin-team:
+  client-abc-*: Admin
+pj-abc-ecsite-dev-team:
+  client-abc-*: Write
+pj-abc-ecsite-team:
+  client-abc-*: Read
 
-# セキュリティチーム
-security-team:
+# セキュリティチーム（組織横断）
+sas-security-team:
   全リポジトリ: Read + Security alerts
   infra-security-*: Admin
 
-# QAチーム
-qa-team:
+# QAチーム（組織横断）
+sas-qa-team:
   全リポジトリ: Triage
 ```
 
@@ -243,7 +334,7 @@ main:
     - enforce_admins: true
     - restrictions:
         users: []
-        teams: [admin-team, product-core-team]
+        teams: [sas-admin-team, sas-product-core-team]
     - allow_force_pushes: false
     - allow_deletions: false
     - required_conversation_resolution: true
@@ -457,9 +548,9 @@ Week 1:
   - [ ] 監査ログ有効化
 
 □ Day 3-4: Core Teams作成
-  - [ ] admin-team作成・権限設定
-  - [ ] security-team作成・権限設定
-  - [ ] platform-team作成・権限設定
+  - [ ] sas-admin-team作成・権限設定
+  - [ ] sas-security-team作成・権限設定
+  - [ ] sas-platform-team作成・権限設定
 
 □ Day 5: セキュリティポリシー
   - [ ] Organization security policy作成
@@ -488,9 +579,9 @@ Week 2:
 ```markdown
 Week 3-4:
 □ Product Teams構築
-  - [ ] product-core-team作成
-  - [ ] product-frontend-team作成
-  - [ ] product-backend-team作成
+  - [ ] sas-product-core-team作成
+  - [ ] sas-product-frontend-team作成
+  - [ ] sas-product-backend-team作成
   - [ ] 権限設定・メンバー追加
 
 □ ブランチ保護設定
@@ -690,9 +781,9 @@ key_metrics:
 ```mermaid
 graph TD
     A[Issue/Problem] --> B{Type?}
-    B -->|Security| C[security-team<br/>即時対応]
-    B -->|Access| D[admin-team<br/>1時間以内]
-    B -->|Technical| E[platform-team<br/>4時間以内]
+    B -->|Security| C[sas-security-team<br/>即時対応]
+    B -->|Access| D[sas-admin-team<br/>1時間以内]
+    B -->|Technical| E[sas-platform-team<br/>4時間以内]
     B -->|Business| F[Product Owner<br/>当日中]
     
     C --> G[CTO/CISO]

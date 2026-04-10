@@ -113,7 +113,7 @@ branch_protection_rules:
     required_review_from_codeowners: true
     
   restrictions:
-    users: ["security-team", "devops-team"]
+    users: ["sas-security-team", "sas-devops-team"]
     teams: ["maintainers"]
     apps: ["dependabot", "github-actions"]
     
@@ -196,7 +196,7 @@ team_structure:
     permissions: admin
     members: ["cto", "security-lead"]
     
-  security-team:
+  sas-security-team:
     description: "セキュリティチーム"
     permissions: maintain
     repositories: all
@@ -393,7 +393,7 @@ repository_secrets:
     
   API_KEY:
     environments: ["production"]
-    required_reviewers: ["security-team"]
+    required_reviewers: ["sas-security-team"]
 ```
 
 ### 5.3 シークレットスキャンワークフロー
@@ -446,7 +446,7 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     reviewers:
-      - "security-team"
+      - "sas-security-team"
     labels:
       - "dependencies"
       - "security"
@@ -469,7 +469,7 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
-      - "devops-team"
+      - "sas-devops-team"
       
   # GitHub Actions
   - package-ecosystem: "github-actions"

@@ -416,7 +416,7 @@ javascript:(function(){
 
 - **技術的な質問**: dev-support@sas-com.com
 - **緊急時**: dev-emergency@sas-com.com
-- **Slackチャンネル**: #dev-team
+- **Slackチャンネル**: #sas-develop-team
 - **Wiki**: https://wiki.sas-com.com/dev
 
 ### よくある質問（FAQ）

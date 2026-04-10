@@ -48,7 +48,7 @@ Request:
   "description": "ABC社ECサイトフロントエンド",
   "private": true,
   "category": "client",
-  "team_ids": ["client-abc-team"],
+  "team_ids": ["pj-abc-ecsite-team"],
   "template_id": "react-typescript-template",
   "branch_protection": {
     "main": "strict",
@@ -74,7 +74,7 @@ Response: 201 Created
 }
 
 # リポジトリ一覧取得
-GET /api/v1/repositories?category=client&team=client-abc-team&status=active
+GET /api/v1/repositories?category=client&team=pj-abc-ecsite-team&status=active
 Authorization: Bearer {token}
 
 Response: 200 OK
@@ -124,10 +124,10 @@ Authorization: Bearer {token}
 
 Request:
 {
-  "name": "client-xyz-team",
+  "name": "pj-xyz-portal-team",
   "description": "XYZ社プロジェクトチーム",
   "privacy": "closed",
-  "parent_team_id": "client-teams",
+  "parent_team_id": null,
   "members": [
     {"username": "developer1", "role": "maintainer"},
     {"username": "developer2", "role": "member"}
@@ -142,8 +142,8 @@ Request:
 Response: 201 Created
 {
   "id": "team_789",
-  "name": "client-xyz-team",
-  "slug": "client-xyz-team",
+  "name": "pj-xyz-portal-team",
+  "slug": "pj-xyz-portal-team",
   "members_count": 2,
   "repos_count": 2,
   "created_at": "2025-09-10T10:00:00Z",

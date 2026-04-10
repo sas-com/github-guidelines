@@ -870,7 +870,7 @@ GITLENS
 Closes #123
 
 ## レビュアー
-@sas-com/backend-team
+@sas-com/sas-product-backend-team
 ```
 
 ### 9.3 コードレビューの実施

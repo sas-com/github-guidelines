@@ -384,8 +384,8 @@ jobs:
           
           ## Emergency Contacts
           - Incident Commander: @${{ github.actor }}
-          - Security Team: @security-team
-          - DevOps: @devops-team
+          - Security Team: @sas-com/sas-security-team
+          - DevOps: @sas-com/sas-devops-team
           
           ## Workflow
           [View Emergency Response](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})

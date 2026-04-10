@@ -10,7 +10,7 @@
 ### メトリクス定義
 
 ```yaml
-# metrics/dev-team-kpis.yml
+# metrics/sas-develop-team-kpis.yml
 development_metrics:
   velocity:
     story_points_completed:
@@ -99,7 +99,7 @@ development_metrics:
 ### メトリクス定義
 
 ```yaml
-# metrics/infra-team-kpis.yml
+# metrics/sas-platform-team-kpis.yml
 infrastructure_metrics:
   availability:
     system_uptime:
@@ -208,7 +208,7 @@ Network:████░░░░░░ 38% (Low)
 ### メトリクス定義
 
 ```yaml
-# metrics/security-team-kris.yml
+# metrics/sas-security-team-kris.yml
 security_metrics:
   vulnerability_management:
     critical_vulnerabilities:

@@ -183,9 +183,9 @@
 - **GitHub管理チーム**: github@sas-com.com
 
 ### Slackチャンネル
-- `#dev-team` - 開発チーム
-- `#infra-team` - インフラチーム
-- `#security-team` - セキュリティチーム
+- `#sas-develop-team` - 開発チーム
+- `#sas-platform-team` - インフラチーム
+- `#sas-security-team` - セキュリティチーム
 - `#github-support` - GitHub全般のサポート
 
 ---

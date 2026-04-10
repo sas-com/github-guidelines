@@ -242,7 +242,7 @@ deprecated:
 ### セキュリティチーム
 
 - **Email**: security@sas-com.com
-- **Slack**: #security-team
+- **Slack**: #sas-security-team
 - **Teams**: セキュリティチーム
 
 ### エスカレーション

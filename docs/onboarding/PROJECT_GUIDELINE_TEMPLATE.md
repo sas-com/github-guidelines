@@ -694,16 +694,16 @@ Closes #
 * @sas-com/[team-name]
 
 # フロントエンド
-/frontend/ @sas-com/frontend-team
-/src/components/ @sas-com/frontend-team
+/frontend/ @sas-com/sas-product-frontend-team
+/src/components/ @sas-com/sas-product-frontend-team
 
 # バックエンド
-/backend/ @sas-com/backend-team
-/api/ @sas-com/backend-team
+/backend/ @sas-com/sas-product-backend-team
+/api/ @sas-com/sas-product-backend-team
 
 # インフラ
-/infrastructure/ @sas-com/infra-team
-/.github/workflows/ @sas-com/infra-team
+/infrastructure/ @sas-com/sas-platform-team
+/.github/workflows/ @sas-com/sas-platform-team
 
 # ドキュメント
 /docs/ @sas-com/[project-manager]

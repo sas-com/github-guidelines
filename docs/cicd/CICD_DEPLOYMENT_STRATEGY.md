@@ -138,7 +138,7 @@ branch_protection_rules:
       require_code_owner_reviews: true
     restrictions:
       users: ["sas-github-admin"]
-      teams: ["sas-tech-leads"]
+      teams: ["sas-techlead-team"]
   
   staging:
     required_status_checks:

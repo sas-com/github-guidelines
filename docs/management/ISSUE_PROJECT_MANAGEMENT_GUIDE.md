@@ -357,15 +357,15 @@ jobs:
 notifications:
   priority_critical:
     channels: ['#alerts', '#on-call']
-    mentions: ['@sre-team', '@security-team']
+    mentions: ['@sas-com/sas-sre-team', '@sas-com/sas-security-team']
   
   security_issues:
     channels: ['#security']
-    mentions: ['@security-team']
+    mentions: ['@sas-com/sas-security-team']
   
   performance_issues:
     channels: ['#performance']
-    mentions: ['@backend-team']
+    mentions: ['@sas-com/sas-product-backend-team']
 ```
 
 ## 📊 メトリクスとレポート

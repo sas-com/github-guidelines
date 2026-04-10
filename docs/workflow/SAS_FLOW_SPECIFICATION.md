@@ -150,8 +150,8 @@ protection_rules:
       - ci/performance-test
       - ci/integration-test
     restrictions:
-      push: ["github-admin-team"]
-      merge: ["release-managers"]
+      push: ["sas-admin-team"]
+      merge: ["sas-release-team"]
   
   staging:
     required_reviews: 1
